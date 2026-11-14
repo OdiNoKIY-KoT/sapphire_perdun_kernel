@@ -1,14 +1,10 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2018-10-17 File created.
+ * Copyright (C) Fourier Semiconductor Inc.
+ * 2025-8-18 File created.
  */
 
 #include "fsm_public.h"
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_gpio.h>
-#endif
+#include <linux/gpio.h>
 
 #define CRC16_TABLE_SIZE      256
 #define CRC16_POLY_NOMIAL     0xA001
@@ -359,6 +355,50 @@ struct fsm_dev *fsm_get_fsm_dev_by_id(int id)
 	return NULL;
 }
 
+static int fsm_pos_mask_to_index(uint8_t pos_mask)
+{
+	int pos_idx;
+
+	switch (pos_mask) {
+	case FSM_POS_LTOP:
+		pos_idx = 3;
+		break;
+	case FSM_POS_LBTM:
+		pos_idx = 2;
+		break;
+	case FSM_POS_RTOP:
+		pos_idx = 1;
+		break;
+	case FSM_POS_RBTM:
+	case FSM_POS_MONO:
+		pos_idx = 0;
+		break;
+	default:
+		pr_err("Failed to get fsm pos_idx: %x", pos_mask);
+		return 0;
+	}
+
+	return pos_idx;
+}
+
+struct fsm_dev *fsm_get_fsm_dev_by_position(uint8_t pos_mask)
+{
+	fsm_config_t *cfg = fsm_get_config();
+	fsm_dev_t *fsm_dev;
+
+	if (!cfg || cfg->dev_count <= 0) {
+		return NULL;
+	}
+
+	list_for_each_entry(fsm_dev, &fsm_dev_list, list) {
+		if (fsm_dev && (pos_mask & fsm_dev->pos_mask)) {
+			return fsm_dev;
+		}
+	}
+
+	return NULL;
+}
+
 int fsm_reg_write(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val)
 {
 	int ret;
@@ -687,39 +727,26 @@ int fsm_access_key(fsm_dev_t *fsm_dev, int access)
 
 int fsm_reg_dump(fsm_dev_t *fsm_dev)
 {
-	char buf[LOG_BUF_SIZE];
-	uint16_t value;
-	int reg_addr;
-	int reg_end;
-	int idx = 0;
-	int ret = 0;
+	uint16_t val[8];
+	uint16_t idx;
+	int ret;
 
 	if (!fsm_dev) {
 		return -EINVAL;
 	}
-	reg_end = (fsm_dev->is1958 ? 0xEF : (fsm_dev->is1820 ? 0xEA : 0xE8));
-	for (reg_addr = 0; reg_addr <= reg_end; reg_addr++) {
-		if (fsm_dev->is1958) {
-			if (reg_addr == 0x60) reg_addr = 0x80;
-			else if (reg_addr == 0x81) reg_addr = 0xA1;
-			else if (reg_addr == 0xD0)
-				ret |= fsm_access_key(fsm_dev, 1);
-		}
-		if (fsm_dev->is1820) {
-			if (reg_addr == 0x60) reg_addr = 0x80;
-		}
-		else if (reg_addr == 0x10) reg_addr = 0x40;
-		else if (reg_addr == 0xD0) {
-			ret |= fsm_access_key(fsm_dev, 1);
-		}
-		ret |= fsm_reg_read(fsm_dev, reg_addr, &value);
-		snprintf(buf+idx*8, 9, "%02X:%04X ", reg_addr, value);
-		idx++;
-		if (idx == 8 || reg_addr == reg_end) {
-			buf[idx*8-1] = '\0';
-			pr_addr(info, "%s", buf);
-			idx = 0;
-		}
+	ret = fsm_access_key(fsm_dev, 1);
+	for (idx = 0; idx < 0xF0; idx += 8) {
+		ret |= fsm_reg_read(fsm_dev, idx, &val[0]);
+		ret |= fsm_reg_read(fsm_dev, idx + 1, &val[1]);
+		ret |= fsm_reg_read(fsm_dev, idx + 2, &val[2]);
+		ret |= fsm_reg_read(fsm_dev, idx + 3, &val[3]);
+		ret |= fsm_reg_read(fsm_dev, idx + 4, &val[4]);
+		ret |= fsm_reg_read(fsm_dev, idx + 5, &val[5]);
+		ret |= fsm_reg_read(fsm_dev, idx + 6, &val[6]);
+		ret |= fsm_reg_read(fsm_dev, idx + 7, &val[7]);
+		pr_addr(info, "%02X: %02X %02X %02X %02X %02X %02X %02X %02X",
+			idx, val[0], val[1], val[2], val[3],
+			val[4], val[5], val[6], val[7]);
 	}
 	ret |= fsm_access_key(fsm_dev, 0);
 
@@ -763,7 +790,7 @@ static int fsm_check_dev_type(fsm_dev_t *fsm_dev)
 	uint16_t dev_type;
 
 	if (!fsm_dev || !fsm_dev->dev_list) {
-		pr_addr(err, "bad parameter");
+		pr_err("bad parameter");
 		return -EINVAL;
 	}
 	dev_type = fsm_dev->dev_list->dev_type;
@@ -802,7 +829,7 @@ int fsm_init_dev_list(fsm_dev_t *fsm_dev)
 
 	pfile = fsm_get_presets();
 	if (!fsm_dev || !pfile) {
-		pr_addr(err, "bad parameter or invalid FW");
+		pr_err("bad parameter or invalid FW");
 		return -EINVAL;
 	}
 
@@ -1111,7 +1138,7 @@ int fsm_get_rstrim(fsm_dev_t *fsm_dev)
 	ret = fsm_reg_read(fsm_dev, reg_rstrim, &value);
 	fsm_access_key(fsm_dev, 0);
 	if (ret || value == 0) {
-		pr_debug("use default rs_trim value");
+		pr_warning("use default rs_trim value");
 		value = FSM_RS_TRIM_DEFAULT;
 	}
 	fsm_dev->rstrim = value;
@@ -1220,7 +1247,7 @@ int fsm_stub_dev_init(fsm_dev_t *fsm_dev)
 	}
 
 	if (gpio_is_valid(fsm_dev->rst_gpio))
-		gpio_set_value(fsm_dev->rst_gpio, 1);
+		gpio_direction_output(fsm_dev->rst_gpio, 1);
 
 	if (cfg->force_init) {
 		pr_addr(info, "force init");
@@ -1321,6 +1348,85 @@ int fsm_dev_count(void)
 	return g_fsm_config.dev_count;
 }
 
+int fsm_stub_set_mute(fsm_dev_t *fsm_dev, bool mute)
+{
+	if (fsm_dev == NULL) {
+		return -EINVAL;
+	}
+	if (fsm_dev->dev_ops.set_mute) {
+		return fsm_dev->dev_ops.set_mute(fsm_dev, mute);
+	}
+	pr_addr(debug, "none ops");
+
+	return 0;
+}
+
+int fsm_stub_amp_switch(struct fsm_dev *fsm_dev, bool on)
+{
+	int ret;
+
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	pr_addr(info, "amp switch:%d state:%d", on, fsm_dev->amp_on);
+	if (!(on ^ fsm_dev->amp_on))
+		return 0;
+
+	ret = fsm_stub_dev_init(fsm_dev); // try init
+	if (ret) { // no device or firmware
+		pr_err("init failed: %d", ret);
+		return ret;
+	}
+
+	if (on) {
+		ret  = fsm_stub_start_up(fsm_dev);
+		ret |= fsm_stub_set_mute(fsm_dev, false);
+	} else {
+		ret  = fsm_stub_set_mute(fsm_dev, true);
+		ret |= fsm_stub_shut_down(fsm_dev);
+	}
+
+	if (!ret)
+		fsm_dev->amp_on = on;
+	else
+		pr_addr(err, "Failed to amp switch %d", ret);
+
+	return ret;
+}
+
+int fsm_stub_set_scene(struct fsm_dev *fsm_dev, int scene)
+{
+	int state_on;
+	int ret = 0;
+
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	pr_addr(debug, "scene:%x", scene);
+	if (fsm_dev->cur_scene == scene)
+		return 0;
+
+	state_on = fsm_dev->amp_on;
+	if (state_on)
+		ret = fsm_stub_amp_switch(fsm_dev, false);
+
+	if ((fsm_dev->own_scene & scene) == 0)
+		return ret;
+
+	if (fsm_dev->dev_ops.switch_preset)
+		ret |= fsm_dev->dev_ops.switch_preset(fsm_dev);
+	ret |= fsm_write_reg_tbl(fsm_dev, scene);
+	if (!ret)
+		fsm_dev->cur_scene = scene;
+	else
+		pr_addr(err, "Failed to set scene: %x", scene);
+
+	if (state_on)
+		ret |= fsm_stub_amp_switch(fsm_dev, true);
+
+	return ret;
+}
+
 void fsm_set_i2s_clocks(uint32_t rate, uint32_t bclk)
 {
 	fsm_config_t *cfg = fsm_get_config();
@@ -1341,15 +1447,24 @@ void fsm_set_scene(int scene)
 {
 	fsm_config_t *cfg = fsm_get_config();
 	fsm_dev_t *fsm_dev = NULL;
+	int state_on;
 
 	if (!cfg || scene < 0 || scene >= FSM_SCENE_MAX) {
 		pr_err("invaild scene:%d", scene);
 		return;
 	}
+
+	state_on = cfg->speaker_on;
+	if (state_on)
+		fsm_speaker_off();
+
 	fsm_mutex_lock();
 	cfg->next_scene = BIT(scene);
 	fsm_list_func(fsm_dev, fsm_stub_switch_preset);
 	fsm_mutex_unlock();
+
+	if (state_on)
+		fsm_speaker_onn();
 }
 
 void fsm_set_volume(int volume)
@@ -1362,7 +1477,7 @@ void fsm_set_volume(int volume)
 	}
 	fsm_mutex_lock();
 	if (volume < 0 || volume > FSM_VOLUME_MAX) {
-		pr_debug("invalid volume: %d, default 0dB", volume);
+		pr_warning("invalid volume: %d, default 0dB", volume);
 		volume = FSM_VOLUME_MAX;
 	}
 	cfg->volume = volume;
@@ -1424,7 +1539,8 @@ int fsm_probe(fsm_dev_t *fsm_dev, int addr)
 	}
 
 	fsm_mutex_lock();
-	fsm_dev->addr = addr;
+	if (fsm_dev->addr == 0)
+		fsm_dev->addr = addr;
 	do {
 		ret = fsm_reg_read(fsm_dev, 0x01, &id);
 		if (ret) {
@@ -1587,20 +1703,272 @@ int fsm_init_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int fsm_amp_switch_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	fsm_config_t *cfg = fsm_get_config();
+	int status;
+
+	fsm_mutex_lock();
+	status = cfg ? cfg->speaker_on : 0;
+	ucontrol->value.integer.value[0] = !!status;
+	fsm_mutex_unlock();
+	pr_info("status: %s", status ? "On" : "Off");
+
+	return 0;
+}
+
+static int fsm_amp_switch_set(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	int status;
+
+	status = !!ucontrol->value.integer.value[0];
+	pr_info("switch: %s", status ? "On" : "Off");
+	if (status)
+		fsm_speaker_onn();
+	else
+		fsm_speaker_off();
+
+	return 0;
+}
+
+
+static int g_amp_scene[FSM_DEV_MAX];
+
+int fsm_left1_scene_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct fsm_dev *fsm_dev;
+	int index;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_LTOP);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ucontrol->value.integer.value[0] = g_amp_scene[index];
+	return 0;
+}
+
+int fsm_left1_scene_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int next_scene = ucontrol->value.integer.value[0];
+	struct fsm_dev *fsm_dev;
+	int index;
+	int ret;
+
+	pr_info("spk next_scene: %d", next_scene);
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_LTOP);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ret = fsm_stub_set_scene(fsm_dev, BIT(next_scene));
+	if (!ret)
+		g_amp_scene[index] = next_scene;
+	fsm_mutex_unlock();
+
+	return 0;
+}
+
+int fsm_left2_scene_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct fsm_dev *fsm_dev;
+	int index;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_LBTM);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ucontrol->value.integer.value[0] = g_amp_scene[index];
+	return 0;
+}
+
+int fsm_left2_scene_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int next_scene = ucontrol->value.integer.value[0];
+	struct fsm_dev *fsm_dev;
+	int index;
+	int ret;
+
+	pr_info("spk next_scene: %d", next_scene);
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_LBTM);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ret = fsm_stub_set_scene(fsm_dev, BIT(next_scene));
+	if (!ret)
+		g_amp_scene[index] = next_scene;
+	fsm_mutex_unlock();
+
+	return 0;
+}
+
+int fsm_right1_scene_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct fsm_dev *fsm_dev;
+	int index;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_RTOP);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ucontrol->value.integer.value[0] = g_amp_scene[index];
+	return 0;
+}
+
+int fsm_right1_scene_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int next_scene = ucontrol->value.integer.value[0];
+	struct fsm_dev *fsm_dev;
+	int index;
+	int ret;
+
+	pr_info("spk next_scene: %d", next_scene);
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_RTOP);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ret = fsm_stub_set_scene(fsm_dev, BIT(next_scene));
+	if (!ret)
+		g_amp_scene[index] = next_scene;
+	fsm_mutex_unlock();
+
+	return 0;
+}
+
+int fsm_right2_scene_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct fsm_dev *fsm_dev;
+	int index;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_RBTM);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ucontrol->value.integer.value[0] = g_amp_scene[index];
+	return 0;
+}
+
+int fsm_right2_scene_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int next_scene = ucontrol->value.integer.value[0];
+	struct fsm_dev *fsm_dev;
+	int index;
+	int ret;
+
+	pr_info("spk next_scene: %d", next_scene);
+	fsm_dev = fsm_get_fsm_dev_by_position(FSM_POS_RBTM);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	index = fsm_pos_mask_to_index(fsm_dev->pos_mask);
+	ret = fsm_stub_set_scene(fsm_dev, BIT(next_scene));
+	if (!ret)
+		g_amp_scene[index] = next_scene;
+	fsm_mutex_unlock();
+
+	return 0;
+}
+
+static int g_spkx_switch = 0;
+
+int fsm_spkx_switch_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = g_spkx_switch;
+	return 0;
+}
+
+int fsm_spkx_switch_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int spkx_switch = ucontrol->value.integer.value[0];
+	struct fsm_dev *fsm_dev;
+	bool on;
+	int ret;
+
+	pr_info("spkx switch: %d", spkx_switch);
+	if (g_spkx_switch == spkx_switch)
+		return 0;
+
+	g_spkx_switch = spkx_switch;
+	if (spkx_switch >= 10) {
+		spkx_switch -= 10;
+		on = true;
+	} else {
+		on = false;
+	}
+
+	if (spkx_switch >= FSM_DEV_MAX)
+		return -EINVAL;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(BIT(spkx_switch));
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	ret = fsm_stub_amp_switch(fsm_dev, on);
+	fsm_mutex_unlock();
+
+	return ret;
+}
+
+static const char *const amp_switch_text[] = { "Off", "On" };
+static const struct soc_enum fsm_snd_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_switch_text), amp_switch_text),
+};
+
 const struct snd_kcontrol_new fsm_snd_controls[] =
 {
 	SOC_SINGLE_EXT("FSM_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
 			fsm_scene_get, fsm_scene_put),
 	SOC_SINGLE_EXT("FSM_Init", SND_SOC_NOPM, 0, 1, 0,
 			fsm_init_get, fsm_init_put),
+	SOC_ENUM_EXT("FSM_Amp_Switch", fsm_snd_enum[0],
+			fsm_amp_switch_get, fsm_amp_switch_set),
+	SOC_SINGLE_EXT("FSM_SpkL1_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
+			fsm_left1_scene_get, fsm_left1_scene_put),
+	SOC_SINGLE_EXT("FSM_SpkR1_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
+			fsm_right1_scene_get, fsm_right1_scene_put),
+	SOC_SINGLE_EXT("FSM_SpkL2_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
+			fsm_left2_scene_get, fsm_left2_scene_put),
+	SOC_SINGLE_EXT("FSM_SpkR2_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
+			fsm_right2_scene_get, fsm_right2_scene_put),
+	SOC_SINGLE_EXT("FSM_SpkX_Switch", SND_SOC_NOPM, 0, 14, 0,
+			fsm_spkx_switch_get, fsm_spkx_switch_put),
 };
 
-void fsm_add_codec_controls(struct snd_soc_codec *codec)
+int fsm_add_codec_controls(struct snd_soc_codec *codec)
 {
-	snd_soc_add_codec_controls(codec, fsm_snd_controls,
+	return snd_soc_add_codec_controls(codec, fsm_snd_controls,
 				ARRAY_SIZE(fsm_snd_controls));
 }
 EXPORT_SYMBOL_GPL(fsm_add_codec_controls);
+
+int fsm_add_card_controls(struct snd_soc_card *card)
+{
+	return snd_soc_add_card_controls(card, fsm_snd_controls,
+				ARRAY_SIZE(fsm_snd_controls));
+}
+EXPORT_SYMBOL_GPL(fsm_add_card_controls);
 
 void fsm_speaker_onn(void)
 {
@@ -1610,6 +1978,11 @@ void fsm_speaker_onn(void)
 
 	pr_info("scene: %04X", cfg->next_scene);
 	fsm_mutex_lock();
+	if (cfg->speaker_on) {
+		pr_info("no need to spk on twice");
+		fsm_mutex_unlock();
+		return;
+	}
 	cfg->stream_muted = false;
 	ret = fsm_try_init();
 	if (ret) { // no device or firmware
@@ -1624,7 +1997,7 @@ void fsm_speaker_onn(void)
 	pr_debug("done");
 	fsm_mutex_unlock();
 }
-EXPORT_SYMBOL(fsm_speaker_onn);
+EXPORT_SYMBOL_GPL(fsm_speaker_onn);
 
 void fsm_speaker_off(void)
 {
@@ -1634,6 +2007,11 @@ void fsm_speaker_off(void)
 
 	pr_info("scene: %04X", cfg->next_scene);
 	fsm_mutex_lock();
+	if (!cfg->speaker_on) {
+		pr_info("no need to spk off twice");
+		fsm_mutex_unlock();
+		return;
+	}
 	cfg->stream_muted = true;
 	ret = fsm_try_init();
 	if (ret) {
@@ -1647,7 +2025,57 @@ void fsm_speaker_off(void)
 	fsm_set_scene(0); // scene music
 	pr_debug("done");
 }
-EXPORT_SYMBOL(fsm_speaker_off);
+EXPORT_SYMBOL_GPL(fsm_speaker_off);
+
+/**
+ * fsm_amp_switch()
+ * uint8_t pos_mask:
+ * === 1 SPEAKER ===
+ * 0x00: mono
+ * === 2 SPEAKER ===
+ * 0x0C: left
+ * 0x03: right
+ * === 4 SPEAKER ===
+ * 0x08: left1
+ * 0x04: left2
+ * 0x02: right1
+ * 0x01: right2
+ */
+int fsm_amp_switch(uint8_t pos_mask, bool on)
+{
+	struct fsm_dev *fsm_dev;
+	int ret;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(pos_mask);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	pr_addr(info, "amp switch: %d", on);
+	ret = fsm_stub_amp_switch(fsm_dev, on);
+	fsm_mutex_unlock();
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(fsm_amp_switch);
+
+int fsm_amp_set_scene(uint8_t pos_mask, int scene)
+{
+	struct fsm_dev *fsm_dev;
+	int ret;
+
+	fsm_dev = fsm_get_fsm_dev_by_position(pos_mask);
+	if (fsm_dev == NULL)
+		return -EINVAL;
+
+	fsm_mutex_lock();
+	pr_addr(info, "amp scene: %04X %04X", pos_mask, scene);
+	ret = fsm_stub_set_scene(fsm_dev, BIT(scene));
+	fsm_mutex_unlock();
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(fsm_amp_set_scene);
 
 void fsm_stereo_rotation(int next_angle)
 {

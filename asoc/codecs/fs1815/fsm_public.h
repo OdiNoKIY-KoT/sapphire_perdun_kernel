@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2018-10-18 File created.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
+ * 2025-8-18 File created.
  */
 
 #ifndef __FSM_PUBLIC_H__
@@ -42,9 +42,6 @@ int fsm_i2c_reg_write(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val);
 int fsm_i2c_bulkwrite(fsm_dev_t *fsm_dev, uint8_t reg,
 				uint8_t *data, int len);
 int fsm_get_amb_tempr(void);
-int fsm_read_efsdata(struct fsm_calib_v2 *data);
-int fsm_write_efsdata(struct fsm_calib_v2 *data);
-int fsm_i2c_save_re25(struct fsm_calib_v2 *calib_data);
 int fsm_i2c_init(void);
 void fsm_i2c_exit(void);
 #else
@@ -231,7 +228,8 @@ void fs1815_ops(fsm_dev_t *fsm_dev);
 #define snd_soc_add_codec_controls snd_soc_add_component_controls
 #define snd_soc_codec_get_drvdata  snd_soc_component_get_drvdata
 #endif
-void fsm_add_codec_controls(struct snd_soc_codec *codec);
+int fsm_add_codec_controls(struct snd_soc_codec *codec);
+int fsm_add_card_controls(struct snd_soc_card *card);
 
 #ifdef __cplusplus
 }

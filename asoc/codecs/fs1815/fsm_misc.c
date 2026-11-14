@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2018-10-16 File created.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
+ * 2025-8-18 File created.
  */
 
 #if defined(CONFIG_FSM_MISC)
@@ -58,7 +58,7 @@ static int fsm_misc_open(struct inode *inode, struct file *filp)
 
 	pr_debug("enter");
 	if (xchg(&g_misc_opened, 1)) {
-			pr_debug("device busy now");
+			pr_warning("device busy now");
 			return -EBUSY;
 	}
 	fsm_misc = fsm_alloc_mem(sizeof(struct fsm_misc));
@@ -334,6 +334,13 @@ static ssize_t fsm_misc_read(struct file *filp, char __user *buf,
 	if (count > FSM_I2C_MAX_LEN) {
 		count = FSM_I2C_MAX_LEN;
 	}
+
+	fsm_misc = filp->private_data;
+	if (fsm_misc->index >= FSM_DEV_MAX || fsm_misc->addr == 0) {
+		pr_err("invalid misc parameter");
+		return -EINVAL;
+	}
+
 	tmp = fsm_alloc_mem(count);
 	if (tmp == NULL) {
 		return -ENOMEM;
@@ -342,7 +349,6 @@ static ssize_t fsm_misc_read(struct file *filp, char __user *buf,
 	if (cfg->skip_monitor == false) {
 		cfg->skip_monitor = true;
 	}
-	fsm_misc = filp->private_data;
 	do {
 		fsm_dev = fsm_misc->fsm_dev[fsm_misc->index];
 		if (fsm_dev == NULL || fsm_dev->i2c == NULL) {
@@ -386,6 +392,13 @@ static ssize_t fsm_misc_write(struct file *filp, const char __user *buf,
 	if (count > FSM_I2C_MAX_LEN) {
 		count = FSM_I2C_MAX_LEN;
 	}
+
+	fsm_misc = filp->private_data;
+	if (fsm_misc->index >= FSM_DEV_MAX || fsm_misc->addr == 0) {
+		pr_err("invalid misc parameter");
+		return -EINVAL;
+	}
+
 	tmp = memdup_user(buf, count);
 	if (IS_ERR(tmp)) {
 		return PTR_ERR(tmp);
@@ -394,7 +407,6 @@ static ssize_t fsm_misc_write(struct file *filp, const char __user *buf,
 	if (cfg->skip_monitor == false) {
 		cfg->skip_monitor = true;
 	}
-	fsm_misc = filp->private_data;
 	do {
 		fsm_dev = fsm_misc->fsm_dev[fsm_misc->index];
 		if (fsm_dev == NULL || fsm_dev->i2c == NULL) {
@@ -425,7 +437,11 @@ static const struct file_operations g_fsm_misc_ops = {
 	.read    = fsm_misc_read,
 	.write   = fsm_misc_write,
 	.release = fsm_misc_release,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0)
 	.llseek  = no_llseek,
+#else
+        .llseek  = NULL,
+#endif
 	.unlocked_ioctl = fsm_misc_ioctl,
 #if defined(CONFIG_COMPAT)
 	.compat_ioctl = fsm_misc_compat_ioctl,

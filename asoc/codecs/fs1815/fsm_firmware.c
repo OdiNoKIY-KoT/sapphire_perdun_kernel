@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2019-02-22 File created.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
+ * 2025-8-18 File created.
  */
 
 #if defined(CONFIG_FSM_FIRMWARE)
@@ -73,7 +73,7 @@ int fsm_firmware_init(char *fw_name)
 	}
 
 	pr_info("loading %s in nowait mode", fw_name);
-	ret = request_firmware_nowait(THIS_MODULE, 1,
+	ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_UEVENT,
 			fw_name, dev, GFP_KERNEL,
 			dev, fsm_firmware_inited);
 	if (ret) {

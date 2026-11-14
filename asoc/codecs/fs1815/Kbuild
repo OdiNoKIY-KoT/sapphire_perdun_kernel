@@ -75,6 +75,7 @@ ifdef CONFIG_SND_SOC_FS1815
 	FS1815_OBJS += fsm_firmware.o
 	FS1815_OBJS += fsm_i2c.o
 	FS1815_OBJS += fsm_misc.o
+	FS1815_OBJS += fsm_sysfs.o
 endif
 
 LINUX_INC +=	-Iinclude/linux

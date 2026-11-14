@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2019-01-29 File created.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
+ * 2025-08-18 File created.
  */
 
 #include "fsm_public.h"
@@ -81,9 +81,10 @@ static int fs1815_i2c_reset(fsm_dev_t *fsm_dev)
 
 	for (i = 0; i < FSM_I2C_RETRY; i++) {
 		fsm_reg_write(fsm_dev, REG(FS1815_PWRCTRL), 0x0002); // reset nack
-		fsm_reg_read(fsm_dev, REG(FS1815_PWRCTRL), NULL); // dummy read
 		fsm_delay_ms(15); // 15ms
 		ret = fsm_reg_write(fsm_dev, REG(FS1815_PWRCTRL), 0x0001);
+		if (!ret)
+			break;
 		ret |= fsm_reg_read(fsm_dev, REG(FS1815_CHIPINI), &val);
 		if ((val == 0x0003) || (val == 0x0300)) { // init finished
 			break;

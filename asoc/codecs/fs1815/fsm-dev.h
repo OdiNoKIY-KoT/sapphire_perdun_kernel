@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
- * 2018-10-16 File created.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
+ * 2025-8-18 File created.
  */
 
 #ifndef __FSM_DEV_H__
@@ -19,17 +19,15 @@
 //#define CONFIG_FSM_CODEC
 #define CONFIG_FSM_FIRMWARE
 #define CONFIG_FSM_I2C
-//#define CONFIG_FSM_Q6AFE
+#define CONFIG_FSM_SYSFS
 #endif
 
 /* device chip select: */
-//#define CONFIG_FSM_NONDSP
-//#define CONFIG_FSM_FS1958
 #define CONFIG_FSM_FS1815
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v4.0.6-b"
-#define FSM_CODE_DATE    "20230404"
+#define FSM_CODE_VERSION "v4.1.0-a"
+#define FSM_CODE_DATE    "20240806"
 #define FSM_GIT_BRANCH   "spc-driver-v1"
 #define FSM_GIT_COMMIT   "23749327"
 
@@ -39,31 +37,6 @@
 // #define FSM_CALIB_SAVE_PATH   "/data"
 // TODO
 #define FSM_CALIB_SAVE_PATH "/mnt/vendor/persist/audio"
-//#ifndef BIT
-//#define BIT(nr)       (1UL << (nr))
-//#endif
-
-/* scenes defination */
-#define FSM_SCENE_UNKNOW           (0)
-#define FSM_SCENE_MUSIC            BIT(0)
-#define FSM_SCENE_VOICE            BIT(1)
-#define FSM_SCENE_VOIP             BIT(2)
-#define FSM_SCENE_RING             BIT(3)
-#define FSM_SCENE_LOW_PWR          BIT(4)
-#define FSM_SCENE_MMI_ALL          BIT(5)
-#define FSM_SCENE_MMI_ALL_BYPASS   BIT(6)
-#define FSM_SCENE_TOP_LEFT         BIT(7)
-#define FSM_SCENE_TOP_LEFT_BYPASS  BIT(8)
-#define FSM_SCENE_TOP_RIGHT        BIT(9)
-#define FSM_SCENE_TOP_RIGHT_BYPASS BIT(10)
-#define FSM_SCENE_BOT_LEFT         BIT(11)
-#define FSM_SCENE_BOT_LEFT_BYPASS  BIT(12)
-#define FSM_SCENE_BOT_RIGHT        BIT(13)
-#define FSM_SCENE_BOT_RIGHT_BYPASS BIT(14)
-#define FSM_SCENE_RCV              BIT(15)
-#define FSM_SCENE_MAX              (16) // TODO
-#define FSM_SCENE_COMMON           (0xFFFF)
-#define FSM_VOLUME_MAX             (0xFF)
 
 /* ------- MACRO FEATURE ------- */
 
@@ -87,6 +60,9 @@
 #include <sound/control.h>
 #endif
 #define logprint(fmt, args...) printk(KERN_CONT fmt, ##args)
+#ifndef pr_warning
+#define pr_warning pr_warn
+#endif
 #elif defined(FSM_HAL_SUPPORT)
 #include <stdio.h>
 #include <string.h>
@@ -187,6 +163,32 @@
 
 #define UNUSED(expr) do { (void)(expr); } while(0)
 
+#ifndef BIT
+#define BIT(nr)       (1UL << (nr))
+#endif
+
+/* scenes defination */
+#define FSM_SCENE_UNKNOW           (0)
+#define FSM_SCENE_MUSIC            BIT(0)
+#define FSM_SCENE_VOICE            BIT(1)
+#define FSM_SCENE_VOIP             BIT(2)
+#define FSM_SCENE_RING             BIT(3)
+#define FSM_SCENE_LOW_PWR          BIT(4)
+#define FSM_SCENE_MMI_ALL          BIT(5)
+#define FSM_SCENE_MMI_ALL_BYPASS   BIT(6)
+#define FSM_SCENE_TOP_LEFT         BIT(7)
+#define FSM_SCENE_TOP_LEFT_BYPASS  BIT(8)
+#define FSM_SCENE_TOP_RIGHT        BIT(9)
+#define FSM_SCENE_TOP_RIGHT_BYPASS BIT(10)
+#define FSM_SCENE_BOT_LEFT         BIT(11)
+#define FSM_SCENE_BOT_LEFT_BYPASS  BIT(12)
+#define FSM_SCENE_BOT_RIGHT        BIT(13)
+#define FSM_SCENE_BOT_RIGHT_BYPASS BIT(14)
+#define FSM_SCENE_RCV              BIT(15)
+#define FSM_SCENE_MAX              (16) // TODO
+#define FSM_SCENE_COMMON           (0xFFFF)
+#define FSM_VOLUME_MAX             (0xFF)
+
 enum dev_id_index {
 	FS1601S_DEV_ID = 0x3,
 	FS1603_DEV_ID = 0x5,
@@ -229,7 +231,9 @@ enum dev_id_index {
 
 #define FSM_DEV_MAX   (4)
 #define FSM_ADDR_BASE (0x34)
+#ifndef MIN
 #define MIN(a, b)     ((a) < (b) ? (a) : (b))
+#endif
 #define HIGH8(val)    ((val >> 8) & 0xFF)
 #define LOW8(val)     (val & 0xFF)
 #define WORD(addr)    ((*(addr) << 8) & *((addr) + 1))
@@ -815,6 +819,7 @@ struct fsm_dev {
 	uint16_t is1801    : 1;
 	uint16_t is1820    : 1;
 	uint16_t is1958    : 1;
+	bool amp_on;
 
 	int rst_gpio;
 	int irq_gpio;

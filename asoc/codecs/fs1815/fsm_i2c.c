@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Fourier Semiconductor Inc. 2016-2020. All rights reserved.
+ * Copyright (C) Fourier Semiconductor Inc. 2025. All rights reserved.
  */
 #include "fsm_public.h"
 #include <linux/module.h>
@@ -15,26 +15,26 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #endif
-#if defined(CONFIG_REGULATOR)
+#if defined(CONFIG_FSM_REGULATOR)
 #include <linux/regulator/consumer.h>
 static struct regulator *g_fsm_vdd = NULL;
 #endif
 
 static DEFINE_MUTEX(g_fsm_mutex);
 static struct device *g_fsm_pdev = NULL;
-static int g_probe_complete_flag = 0;
 
 /* customize configrature */
 #include "fsm_firmware.c"
 #include "fsm_misc.c"
+// #include "fsm_sysfs.c"
 //#include "fsm_codec.c"
 
-void fsm_mutex_lock()
+void fsm_mutex_lock(void)
 {
 	mutex_lock(&g_fsm_mutex);
 }
 
-void fsm_mutex_unlock()
+void fsm_mutex_unlock(void)
 {
 	mutex_unlock(&g_fsm_mutex);
 }
@@ -176,6 +176,7 @@ struct device *fsm_get_pdev(void)
 	return g_fsm_pdev;
 }
 
+#if defined(CONFIG_FSM_REGULATOR)
 int fsm_vddd_on(struct device *dev)
 {
 	fsm_config_t *cfg = fsm_get_config();
@@ -184,7 +185,6 @@ int fsm_vddd_on(struct device *dev)
 	if (!cfg || cfg->vddd_on) {
 		return 0;
 	}
-#if defined(CONFIG_REGULATOR)
 	g_fsm_vdd = regulator_get(dev, "fsm_vddd");
 	if (IS_ERR(g_fsm_vdd) != 0) {
 		pr_err("error getting fsm_vddd regulator");
@@ -198,7 +198,6 @@ int fsm_vddd_on(struct device *dev)
 	if (ret < 0) {
 		pr_err("enabling fsm_vddd failed: %d", ret);
 	}
-#endif
 	cfg->vddd_on = 1;
 	fsm_delay_ms(10);
 
@@ -212,16 +211,18 @@ void fsm_vddd_off(void)
 	if (!cfg || !cfg->vddd_on || cfg->dev_count > 0) {
 		return;
 	}
-#if defined(CONFIG_REGULATOR)
 	if (g_fsm_vdd) {
 		pr_info("disable regulator");
 		regulator_disable(g_fsm_vdd);
 		regulator_put(g_fsm_vdd);
 		g_fsm_vdd = NULL;
 	}
-#endif
 	cfg->vddd_on = 0;
 }
+#else
+#define fsm_vddd_on(...)
+#define fsm_vddd_off(...)
+#endif
 
 int fsm_get_amb_tempr(void)
 {
@@ -308,6 +309,7 @@ static int fsm_ext_reset(fsm_dev_t *fsm_dev)
 {
 	fsm_config_t *cfg = fsm_get_config();
 	uint16_t id = 0;
+	int addr;
 	int ret;
 
 	if (!cfg || !fsm_dev) {
@@ -326,9 +328,9 @@ static int fsm_ext_reset(fsm_dev_t *fsm_dev)
 	}
 	fsm_mutex_lock();
 	/* soft reset */
-	fsm_dev->addr = fsm_dev->i2c->addr;
+	addr = fsm_dev->i2c->addr;
 	ret = fsm_reg_read(fsm_dev, 0x01, &id);
-	if (ret && fsm_dev->addr != 0x34) {
+	if (ret && addr != 0x34) {
 		fsm_dev->i2c->addr = 0x34;
 		ret = fsm_reg_read(fsm_dev, 0x01, &id);
 	}
@@ -338,8 +340,7 @@ static int fsm_ext_reset(fsm_dev_t *fsm_dev)
 	} else {
 		ret = -ENODEV;
 	}
-	fsm_dev->i2c->addr = fsm_dev->addr;
-	fsm_dev->addr = 0;
+	fsm_dev->i2c->addr = addr;
 	fsm_mutex_unlock();
 
 	return 0;
@@ -368,7 +369,7 @@ static void fsm_work_monitor(struct work_struct *work)
 	//ret = fsm_dev_recover(fsm_dev);
 	fsm_mutex_unlock();
 	if (fsm_dev->rec_count >= 5) { // 5 time max
-		pr_addr(debug, "recover max time, stop it");
+		pr_addr(warning, "recover max time, stop it");
 		return;
 	}
 	/* reschedule */
@@ -428,37 +429,11 @@ static int fsm_request_irq(fsm_dev_t *fsm_dev)
 	return 0;
 }
 
-static int fsm_i2c_pre_check(fsm_dev_t *fsm_dev)
-{
-	uint16_t id = 0;
-	uint16_t temp_addr = 0;
-	int ret;
-
-	if (!fsm_dev) {
-		return -EINVAL;
-	}
-
-	fsm_mutex_lock();
-	temp_addr = fsm_dev->i2c->addr;
-	ret = fsm_reg_read(fsm_dev, 0x01, &id);
-	if (ret && (temp_addr != 0x34)) {
-		fsm_dev->i2c->addr = 0x34;
-		ret = fsm_reg_read(fsm_dev, 0x01, &id);
-	}
-	if (ret) {
-		ret = -ENODEV;
-		dev_err(&fsm_dev->i2c->dev, "precheck fsm devcie failed");
-	}
-	fsm_dev->i2c->addr = temp_addr;
-	fsm_mutex_unlock();
-
-	return ret;
-}
-
 #ifdef CONFIG_OF
 static int fsm_parse_dts(struct i2c_client *i2c, fsm_dev_t *fsm_dev)
 {
 	struct device_node *np = i2c->dev.of_node;
+	uint8_t dummy_addr;
 	char *str_name;
 	int ret;
 
@@ -469,12 +444,24 @@ static int fsm_parse_dts(struct i2c_client *i2c, fsm_dev_t *fsm_dev)
 	str_name = devm_kzalloc(&i2c->dev, 32, GFP_KERNEL);
 	fsm_dev->rst_gpio = of_get_named_gpio(np, "fsm,rst-gpio", 0);
 	if (gpio_is_valid(fsm_dev->rst_gpio)) {
-		snprintf(str_name, 32, "FS1815_SDZ_%02X", i2c->addr);
+		snprintf(str_name, 32, "FS1815_SDZ_%d_%02X_%d",
+				i2c->adapter->nr, i2c->addr, fsm_dev->rst_gpio);
 		ret = devm_gpio_request_one(&i2c->dev, fsm_dev->rst_gpio,
 			GPIOF_OUT_INIT_LOW, str_name);
+		if (ret == -EBUSY) {
+			ret = 0;
+			fsm_dev->rst_gpio = -1;
+			dev_info(&i2c->dev, "request rst gpio busy!\n");
+		}
 		if (ret)
 			return ret;
 	}
+
+	ret = of_property_read_u8(np, "fsm,dummy-addr", &dummy_addr);
+	if (ret)
+		dummy_addr = 0;
+
+	fsm_dev->addr = dummy_addr;
 
 	return 0;
 }
@@ -488,14 +475,54 @@ static struct of_device_id fsm_match_tbl[] =
 MODULE_DEVICE_TABLE(of, fsm_match_tbl);
 #endif
 
-static int fsm_i2c_probe(struct i2c_client *i2c,
-			const struct i2c_device_id *id)
+/*
+ * sapphire: the speaker amplifier is dual-sourced (FourSemi fs1815 or
+ * Awinic aw87xxx). aw87xxx checks this flag to know whether the FourSemi
+ * part answered. 0 = not probed yet, 1 = probed OK, <0 = probe error.
+ * Reconstructed from the stock fs1815_dlkm.ko.
+ */
+static int g_probe_complete_flag;
+
+int get_fsm_probe_complete_flag(void)
+{
+	return g_probe_complete_flag;
+}
+EXPORT_SYMBOL(get_fsm_probe_complete_flag);
+
+extern int lct_audio_info_set_pa_name(const char *name, int len);
+
+/* stock reads the chip id once before touching the reset gpio; the
+ * part answers on its own address or on the 0x34 default address */
+static int fsm_i2c_check_chipid(fsm_dev_t *fsm_dev)
+{
+	struct i2c_client *i2c = fsm_dev->i2c;
+	uint16_t addr = i2c->addr;
+	uint16_t id = 0;
+	int ret;
+
+	fsm_mutex_lock();
+	ret = fsm_reg_read(fsm_dev, 0x01, &id);
+	if (ret && addr != 0x34) {
+		i2c->addr = 0x34;
+		ret = fsm_reg_read(fsm_dev, 0x01, &id);
+	}
+	if (!ret)
+		dev_info(&i2c->dev, "read chipid success: 0x%x", id);
+	i2c->addr = addr;
+	fsm_mutex_unlock();
+
+	return ret;
+}
+
+static int fsm_i2c_probe(struct i2c_client *i2c)
 {
 	fsm_config_t *cfg = fsm_get_config();
 	fsm_dev_t *fsm_dev;
-	int ret = 0;
+	int ret;
 
-	pr_debug("enter");
+	char pa_name[32] = { 0 };
+
+	dev_info(&i2c->dev, "probe start!");
 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
 		dev_err(&i2c->dev, "check I2C_FUNC_I2C failed");
 		g_probe_complete_flag = -EIO;
@@ -513,10 +540,10 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
 	mutex_init(&fsm_dev->i2c_lock);
 	fsm_dev->i2c = i2c;
 
-	ret = fsm_i2c_pre_check(fsm_dev);
+	ret = fsm_i2c_check_chipid(fsm_dev);
 	if (ret) {
 		devm_kfree(&i2c->dev, fsm_dev);
-		dev_err(&i2c->dev, " fsm pre check failed");
+		dev_err(&i2c->dev, "failed to check chip_id");
 		g_probe_complete_flag = ret;
 		return ret;
 	}
@@ -524,8 +551,8 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
 #ifdef CONFIG_OF
 	ret = fsm_parse_dts(i2c, fsm_dev);
 	if (ret) {
-		devm_kfree(&i2c->dev, fsm_dev);
 		dev_err(&i2c->dev, "failed to parse DTS node");
+		devm_kfree(&i2c->dev, fsm_dev);
 		g_probe_complete_flag = ret;
 		return ret;
 	}
@@ -534,8 +561,7 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
 	fsm_dev->regmap = fsm_regmap_i2c_init(i2c);
 	if (fsm_dev->regmap == NULL) {
 		devm_kfree(&i2c->dev, fsm_dev);
-		dev_err(&i2c->dev, "regmap init fialed");
-		g_probe_complete_flag = -EINVAL;
+		dev_err(&i2c->dev, "regmap init failed");
 		return -EINVAL;
 	}
 #endif
@@ -548,8 +574,10 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
 #if defined(CONFIG_FSM_REGMAP)
 		fsm_regmap_i2c_deinit(fsm_dev->regmap);
 #endif
-		gpio_set_value(fsm_dev->rst_gpio, 0);
-		devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
+		if (gpio_is_valid(fsm_dev->rst_gpio)) {
+			gpio_set_value(fsm_dev->rst_gpio, 0);
+			//devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
+		}
 		devm_kfree(&i2c->dev, fsm_dev);
 		g_probe_complete_flag = ret;
 		return ret;
@@ -562,36 +590,44 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
 	INIT_DELAYED_WORK(&fsm_dev->interrupt_work, fsm_work_interrupt);
 	fsm_request_irq(fsm_dev);
 
+	fsm_sysfs_init(&i2c->dev);
 	if(fsm_dev->id == 0) {
 		// reigster only in the first device
 #if !defined(CONFIG_FSM_CODEC)
 		fsm_set_pdev(&i2c->dev);
 #endif
 		fsm_misc_init();
-		fsm_sysfs_init(&i2c->dev);
 		fsm_codec_register(&i2c->dev, fsm_dev->id);
+		ret = fsm_firmware_init(cfg->fw_name);
+		if(ret){
+			pr_err("firmware init failed:%d, retry later",ret);
+		}
 	}
-
+	/* report the fitted PA to lct_audio_info ("<dev>-FSM-") */
+	snprintf(pa_name, sizeof(pa_name), "%s-FSM-", dev_name(&i2c->dev));
+	lct_audio_info_set_pa_name(pa_name, strlen(pa_name));
 	dev_info(&i2c->dev, "i2c probe completed");
-
 	g_probe_complete_flag = 1;
+
 	return 0;
 }
 
-int get_fsm_probe_complete_flag(void)
-{
-	return g_probe_complete_flag;
-}
-EXPORT_SYMBOL(get_fsm_probe_complete_flag);
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 static int fsm_i2c_remove(struct i2c_client *i2c)
+#else
+static void fsm_i2c_remove(struct i2c_client *i2c)
+#endif
 {
 	fsm_dev_t *fsm_dev = i2c_get_clientdata(i2c);
 
 	pr_debug("enter");
 	if (fsm_dev == NULL) {
 		pr_err("bad parameter");
-		return -EINVAL;
+	#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
+	return 0;
+#else
+	return;
+#endif
 	}
 	if (fsm_dev->fsm_wq) {
 		cancel_delayed_work_sync(&fsm_dev->interrupt_work);
@@ -601,9 +637,9 @@ static int fsm_i2c_remove(struct i2c_client *i2c)
 #if defined(CONFIG_FSM_REGMAP)
 	fsm_regmap_i2c_deinit(fsm_dev->regmap);
 #endif
+	fsm_sysfs_deinit(&i2c->dev);
 	if (fsm_dev->id == 0) {
 		fsm_codec_unregister(&i2c->dev);
-		fsm_sysfs_deinit(&i2c->dev);
 		fsm_misc_deinit();
 		fsm_set_pdev(NULL);
 	}
@@ -611,15 +647,16 @@ static int fsm_i2c_remove(struct i2c_client *i2c)
 	fsm_remove(fsm_dev);
 	fsm_vddd_off();
 	if (gpio_is_valid(fsm_dev->irq_gpio)) {
-		devm_gpio_free(&i2c->dev, fsm_dev->irq_gpio);
+		//devm_gpio_free(&i2c->dev, fsm_dev->irq_gpio);
 	}
 	if (gpio_is_valid(fsm_dev->rst_gpio)) {
-		devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
+		//devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
 	}
 	devm_kfree(&i2c->dev, fsm_dev);
 	dev_info(&i2c->dev, "i2c removed");
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 	return 0;
+#endif
 }
 
 static void fsm_i2c_shutdown(struct i2c_client *i2c)
@@ -656,22 +693,25 @@ static struct i2c_driver fsm_i2c_driver =
 		.of_match_table = of_match_ptr(fsm_match_tbl),
 #endif
 	},
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
+	.probe_new = fsm_i2c_probe,
+#else
 	.probe    = fsm_i2c_probe,
+#endif
 	.remove   = fsm_i2c_remove,
 	.shutdown = fsm_i2c_shutdown,
 	.id_table = fsm_i2c_id,
 };
 
-int exfsm_i2c_probe(struct i2c_client *i2c,
-			const struct i2c_device_id *id)
+int exfsm_i2c_probe(struct i2c_client *i2c)
 {
-	return fsm_i2c_probe(i2c, id);
+	return fsm_i2c_probe(i2c);
 }
 EXPORT_SYMBOL(exfsm_i2c_probe);
 
-int exfsm_i2c_remove(struct i2c_client *i2c)
+void exfsm_i2c_remove(struct i2c_client *i2c)
 {
-	return fsm_i2c_remove(i2c);
+	fsm_i2c_remove(i2c);
 }
 EXPORT_SYMBOL(exfsm_i2c_remove);
 

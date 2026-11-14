@@ -267,6 +267,8 @@ hdd_handle_nud_fail_sta(struct hdd_context *hdd_ctx,
 static void
 hdd_handle_nud_fail_non_sta(struct hdd_adapter *adapter)
 {
+	hdd_debug("Do not disconnect after NUD Failure");
+	return;
 	wlan_hdd_cm_issue_disconnect(adapter,
 				     REASON_GATEWAY_REACHABILITY_FAILURE,
 				     false);
@@ -406,8 +408,6 @@ static void hdd_nud_process_failure_event(struct hdd_adapter *adapter)
 		hdd_nud_capture_stats(adapter, NUD_FAILED);
 		if (hdd_nud_honour_failure(adapter)) {
 			adapter->nud_tracking.curr_state = NUD_FAILED;
-			qdf_sched_work(0, &adapter
-					->nud_tracking.nud_event_work);
 		} else {
 			hdd_debug("NUD_START [0x%x]", NUD_INCOMPLETE);
 			hdd_nud_capture_stats(adapter, NUD_INCOMPLETE);

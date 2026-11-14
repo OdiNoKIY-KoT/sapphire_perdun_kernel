@@ -143,6 +143,11 @@ static int wcd937x_handle_post_irq(void *data)
 	struct wcd937x_priv *wcd937x = data;
 	u32 status1 = 0, status2 = 0, status3 = 0;
 
+	/* Clear the ACK registers. Temporary workaround.*/
+	regmap_write(wcd937x->regmap, WCD937X_DIGITAL_INTR_CLEAR_0, 0x0);
+	regmap_write(wcd937x->regmap, WCD937X_DIGITAL_INTR_CLEAR_1, 0x0);
+	regmap_write(wcd937x->regmap, WCD937X_DIGITAL_INTR_CLEAR_2, 0x0);
+
 	regmap_read(wcd937x->regmap, WCD937X_DIGITAL_INTR_STATUS_0, &status1);
 	regmap_read(wcd937x->regmap, WCD937X_DIGITAL_INTR_STATUS_1, &status2);
 	regmap_read(wcd937x->regmap, WCD937X_DIGITAL_INTR_STATUS_2, &status3);
@@ -187,6 +192,9 @@ static int wcd937x_init_reg(struct snd_soc_component *component)
 	snd_soc_component_update_bits(component,
 				WCD937X_HPH_SURGE_HPHLR_SURGE_EN,
 				0xFF, 0xD9);
+	snd_soc_component_update_bits(component,
+				WCD937X_ANA_EAR,
+				0x40, 0x40);//open OCP
 	snd_soc_component_update_bits(component, WCD937X_MICB1_TEST_CTL_1,
 				0xFF, 0xFA);
 	snd_soc_component_update_bits(component, WCD937X_MICB2_TEST_CTL_1,
@@ -1821,6 +1829,10 @@ static int wcd937x_event_notify(struct notifier_block *block,
 		wcd937x_init_reg(component);
 		regcache_mark_dirty(wcd937x->regmap);
 		regcache_sync(wcd937x->regmap);
+		/* Enable surge protection */
+		snd_soc_component_update_bits(component,
+				WCD937X_HPH_SURGE_HPHLR_SURGE_EN,
+				0xFF, 0xD9);
 		/* Initialize MBHC module */
 		mbhc = &wcd937x->mbhc->wcd_mbhc;
 		ret = wcd937x_mbhc_post_ssr_init(wcd937x->mbhc, component);
@@ -2005,6 +2017,31 @@ static int wcd937x_tx_ch_pwr_level_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_AW87XXX
+static unsigned int g_wcd937x_aw87xxx_dev0_mode = 0;
+extern int aw87xxx_show_current_profile_index(int dev_index);
+static int wcd937x_aw87xxx_dev0_mode_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	int current_mode = 0;
+	current_mode = aw87xxx_show_current_profile_index(0);
+	ucontrol->value.integer.value[0] = current_mode;
+	pr_debug("%s: get mode:%d\n", __func__, current_mode);
+	return 0;
+}
+
+static int wcd937x_aw87xxx_dev0_mode_set(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	int set_mode;
+	set_mode = ucontrol->value.integer.value[0];
+	g_wcd937x_aw87xxx_dev0_mode = set_mode;
+	pr_debug("%s: set mode:%d success", __func__, set_mode);
+	return 0;
+}
+
+#endif /* CONFIG_SND_SOC_AW87XXX */
+
 static int wcd937x_ear_pa_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -2138,6 +2175,11 @@ static int wcd937x_codec_enable_vdd_buck(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_AW87XXX
+static const char *const wcd937x_aw87xxx_mode_function[] = { "Music", "Voice", "Voip",
+		"Ringtone", "Ringtone_hs", "Lowpower", "Bypass", "Mmi",
+		"Fm", "Notification", "Receiver", "Off" };
+#endif /* CONFIG_SND_SOC_AW87XXX */
 static const char * const rx_hph_mode_mux_text[] = {
 	"CLS_H_INVALID", "CLS_H_HIFI", "CLS_H_LP", "CLS_AB", "CLS_H_LOHIFI",
 	"CLS_H_ULP", "CLS_AB_HIFI",
@@ -2285,6 +2327,10 @@ static const char * const wcd937x_ear_pa_gain_text[] = {
 	"G_M15_DB", "G_M16P5_DB", "G_M18_DB",
 };
 
+#ifdef CONFIG_SND_SOC_AW87XXX
+static SOC_ENUM_SINGLE_EXT_DECL(wcd937x_aw87xxx_mode, wcd937x_aw87xxx_mode_function);
+#endif /* CONFIG_SND_SOC_AW87XXX */
+
 static const struct soc_enum rx_hph_mode_mux_enum =
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(rx_hph_mode_mux_text),
 			    rx_hph_mode_mux_text);
@@ -2339,6 +2385,10 @@ static const struct snd_kcontrol_new wcd937x_snd_controls[] = {
 		wcd937x_tx_ch_pwr_level_get, wcd937x_tx_ch_pwr_level_put),
 	SOC_ENUM_EXT("TX CH3 PWR", wcd937x_tx_ch_pwr_level_enum,
 		wcd937x_tx_ch_pwr_level_get, wcd937x_tx_ch_pwr_level_put),
+#ifdef CONFIG_SND_SOC_AW87XXX
+	SOC_ENUM_EXT("wcd937x_aw87xxx_dev0_mode",wcd937x_aw87xxx_mode ,
+			wcd937x_aw87xxx_dev0_mode_get, wcd937x_aw87xxx_dev0_mode_set),
+#endif /* CONFIG_SND_SOC_AW87XXX */
 };
 
 static const struct snd_kcontrol_new adc1_switch[] = {
@@ -2415,6 +2465,118 @@ static const struct snd_kcontrol_new tx_adc2_mux =
 
 static const struct snd_kcontrol_new rx_rdac3_mux =
 	SOC_DAPM_ENUM("RDAC3_MUX Mux", rdac3_enum);
+
+#ifdef CONFIG_SND_SOC_AW87XXX
+extern int aw87xxx_set_profile(int dev_index, char *profile);
+
+enum aw87xxx_dev_index {
+	AW_DEV_0 = 0,
+};
+
+/* copy from aw_acf_bin.c */
+static char *aw_profile[] = {"Music", "Voice", "Voip",
+		"Ringtone", "Ringtone_hs", "Lowpower", "Bypass", "Mmi",
+		"Fm", "Notification", "Receiver", "Off"};
+
+/* copy from aw_acf_bin.h */
+enum aw_bin_dev_profile_id {
+	AW_PROFILE_MUSIC = 0x0000,
+	AW_PROFILE_VOICE,
+	AW_PROFILE_VOIP,
+	AW_PROFILE_RINGTONE,
+	AW_PROFILE_RINGTONE_HS,
+	AW_PROFILE_LOWPOWER,
+	AW_PROFILE_BYPASS,
+	AW_PROFILE_MMI,
+	AW_PROFILE_FM,
+	AW_PROFILE_NOTIFICATION,
+	AW_PROFILE_RECEIVER,
+	AW_PROFILE_OFF,
+	AW_PROFILE_MAX,
+};
+
+int aw87xxx_dev_0_pa(int enable, int mode)
+{
+	int ret = 0;
+	unsigned char set_mode;
+
+	if (false == enable)
+		set_mode = AW_PROFILE_OFF;
+	else
+		set_mode = mode;
+	pr_info("%s: aw87xxx_dev_0_mode %d\n", __func__, set_mode);
+
+	ret = aw87xxx_set_profile(AW_DEV_0, aw_profile[set_mode]);
+	if (ret < 0) {
+		pr_err("%s: mode:%d set failed\n", __func__, set_mode);
+		return -EPERM;
+	}
+	return 0;
+}
+
+static int aw87xxx_pa_dev_0_event(struct snd_soc_dapm_widget *w, struct snd_kcontrol *kcontrol, int event)
+{
+	int mode = g_wcd937x_aw87xxx_dev0_mode;
+	switch (event) {
+		case SND_SOC_DAPM_POST_PMU:
+			aw87xxx_dev_0_pa(true, mode);
+			break;
+		case SND_SOC_DAPM_PRE_PMD:
+			aw87xxx_dev_0_pa(false, mode);
+			break;
+		default:
+		pr_err("%s: invalid DAPM event %d\n", __func__, event);
+		return -EINVAL;
+	}
+	return 0;
+}
+#endif /* CONFIG_SND_SOC_AW87XXX */
+
+#if defined(CONFIG_SND_SOC_SIPA)
+extern int wcd937x_sia81xx_resume(void);
+extern wcd937x_sia81xx_suspend(void);
+static int sia81xx_dev_0_pa_event(struct snd_soc_dapm_widget *w,
+		     struct snd_kcontrol *control, int event)
+{
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		wcd937x_sia81xx_resume();
+		pr_debug("%s: power on", __func__);
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		wcd937x_sia81xx_suspend();
+		pr_debug("%s: power off", __func__);
+		break;
+	default:
+		pr_err("%s: invalid DAPM event %d\n", __func__, event);
+		break;
+	}
+
+	return 0;
+}
+#endif /* CONFIG_SND_SOC_SIPA */
+
+#if defined(CONFIG_SND_SOC_FS1815)
+extern void fsm_speaker_onn(void);
+extern void fsm_speaker_off(void);
+static int fs1815_dev_0_pa_event(struct snd_soc_dapm_widget *w,
+		     struct snd_kcontrol *control, int event)
+{
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		fsm_speaker_onn();
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		fsm_speaker_off();
+		break;
+	default:
+		pr_err("%s: invalid DAPM event %d\n", __func__, event);
+		break;
+	}
+
+	return 0;
+}
+#endif /* CONFIG_SND_SOC_FS1815 */
 
 static const struct snd_soc_dapm_widget wcd937x_dapm_widgets[] = {
 
@@ -2569,6 +2731,22 @@ static const struct snd_soc_dapm_widget wcd937x_dapm_widgets[] = {
 				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 				SND_SOC_DAPM_POST_PMD),
 
+#ifdef CONFIG_SND_SOC_AW87XXX
+	SND_SOC_DAPM_OUT_DRV_E("AW87XXX_DEV_0", SND_SOC_NOPM, 0, 0, NULL, 0,
+				aw87xxx_pa_dev_0_event, SND_SOC_DAPM_POST_PMU |
+				SND_SOC_DAPM_PRE_PMD),
+#endif /* CONFIG_SND_SOC_AW87XXX */
+#if defined(CONFIG_SND_SOC_SIPA)
+	SND_SOC_DAPM_OUT_DRV_E("SIA81XX_DEV_0", SND_SOC_NOPM, 0, 0, NULL, 0,
+				sia81xx_dev_0_pa_event, SND_SOC_DAPM_POST_PMU |
+				SND_SOC_DAPM_PRE_PMD),
+#endif /* CONFIG_SND_SOC_SIPA */
+#if defined(CONFIG_SND_SOC_FS1815)
+	SND_SOC_DAPM_OUT_DRV_E("FS1815_DEV_0", SND_SOC_NOPM, 0, 0, NULL, 0,
+				fs1815_dev_0_pa_event, SND_SOC_DAPM_POST_PMU |
+				SND_SOC_DAPM_PRE_PMD),
+#endif /* CONFIG_SND_SOC_FS1815 */
+
 };
 
 static const struct snd_soc_dapm_widget wcd9375_dapm_widgets[] = {
@@ -2683,7 +2861,22 @@ static const struct snd_soc_dapm_route wcd937x_audio_map[] = {
 	{"RDAC4", NULL, "RX3"},
 	{"AUX_RDAC", "Switch", "RDAC4"},
 	{"AUX PGA", NULL, "AUX_RDAC"},
+#if defined(CONFIG_SND_SOC_AW87XXX) || defined(CONFIG_SND_SOC_SIPA) || defined(CONFIG_SND_SOC_FS1815)
+#if defined(CONFIG_SND_SOC_AW87XXX)
+	{"AW87XXX_DEV_0", NULL, "AUX PGA"},
+	{"AUX", NULL, "AW87XXX_DEV_0"},
+#endif /* CONFIG_SND_SOC_AW87XXX */
+#if defined(CONFIG_SND_SOC_SIPA)
+	{"SIA81XX_DEV_0", NULL, "AUX PGA"},
+	{"AUX", NULL, "SIA81XX_DEV_0"},
+#endif /* CONFIG_SND_SOC_SIPA */
+#if defined(CONFIG_SND_SOC_FS1815)
+	{"FS1815_DEV_0", NULL, "AUX PGA"},
+	{"AUX", NULL, "FS1815_DEV_0"},
+#endif /* CONFIG_SND_SOC_FS1815 */
+#else
 	{"AUX", NULL, "AUX PGA"},
+#endif
 
 	{"RDAC3_MUX", "RX3", "RX3"},
 	{"RDAC3_MUX", "RX1", "RX1"},

@@ -535,11 +535,11 @@ static int aw_monitor_chip_esd_check_work(struct aw87xxx *aw87xxx)
 static int aw_monitor_update_vmax_to_dsp(struct device *dev,
 				struct aw_monitor *monitor, int vmax_set)
 {
-	//int ret = -1;
-	//uint32_t enable = 0;
+	int ret = -1;
+	uint32_t enable = 0;
 
 	if (monitor->pre_vmax != vmax_set) {
-		/*ret = aw87xxx_dsp_get_rx_module_enable(&enable);
+		ret = aw87xxx_dsp_get_rx_module_enable(&enable);
 		if (!enable || ret < 0) {
 			AW_DEV_LOGE(dev, "get rx failed or rx disable, ret=%d, enable=%d",
 				ret, enable);
@@ -550,7 +550,7 @@ static int aw_monitor_update_vmax_to_dsp(struct device *dev,
 		if (ret) {
 			AW_DEV_LOGE(dev, "set dsp msg fail, ret=%d", ret);
 			return ret;
-		}*/
+		}
 
 		AW_DEV_LOGI(dev, "set dsp vmax=0x%x sucess", vmax_set);
 		monitor->pre_vmax = vmax_set;
@@ -879,12 +879,12 @@ static ssize_t aw_attr_set_vmax(struct device *dev,
 	AW_DEV_LOGI(aw87xxx->dev, "vmax_set=0x%x", vmax_set);
 
 	if (monitor->open_dsp_en) {
-		/*ret = aw87xxx_dsp_set_vmax(vmax_set, aw87xxx->dev_index);
+		ret = aw87xxx_dsp_set_vmax(vmax_set, aw87xxx->dev_index);
 		if (ret < 0) {
 			AW_DEV_LOGE(aw87xxx->dev, "send dsp_msg error, ret = %d",
 				ret);
 			return ret;
-		}*/
+		}
 		msleep(2);
 	} else {
 		AW_DEV_LOGE(aw87xxx->dev, "no_dsp system,vmax_set invalid");
@@ -1049,17 +1049,17 @@ static ssize_t aw_attr_get_rx(struct device *dev,
 	struct aw87xxx *aw87xxx = dev_get_drvdata(dev);
 	struct aw_monitor *monitor = &aw87xxx->monitor;
 	ssize_t len = 0;
-	//int ret = -1;
-	//uint32_t enable = 0;
+	int ret = -1;
+	uint32_t enable = 0;
 
 	if (monitor->open_dsp_en) {
-		/*ret = aw87xxx_dsp_get_rx_module_enable(&enable);
+		ret = aw87xxx_dsp_get_rx_module_enable(&enable);
 		if (ret) {
 			AW_DEV_LOGE(aw87xxx->dev, "dsp_msg error, ret=%d", ret);
 			return ret;
 		}
 		len += snprintf(buf + len, PAGE_SIZE - len,
-			"aw87xxx rx: %u\n", enable);*/
+			"aw87xxx rx: %u\n", enable);
 	} else {
 		len += snprintf(buf + len, PAGE_SIZE - len,
 				"command is invalid\n");
@@ -1083,12 +1083,12 @@ static ssize_t aw_attr_set_rx(struct device *dev,
 	if (monitor->open_dsp_en) {
 		AW_DEV_LOGI(aw87xxx->dev, "set rx enable=%d", enable);
 
-		/*ret = aw87xxx_dsp_set_rx_module_enable(enable);
+		ret = aw87xxx_dsp_set_rx_module_enable(enable);
 		if (ret < 0) {
 			AW_DEV_LOGE(aw87xxx->dev, "dsp_msg error, ret=%d",
 				ret);
 			return ret;
-		}*/
+		}
 	} else {
 		AW_DEV_LOGE(aw87xxx->dev, "command is invalid");
 		return -EINVAL;
@@ -1151,13 +1151,13 @@ static void aw_monitor_dtsi_parse(struct device *dev,
 
 	ret = of_property_read_string(dev_node, "esd-enable", &esd_enable);
 	if (ret < 0) {
-		AW_DEV_LOGI(dev, "esd_enable parse failed, user default[disable]");
-		monitor->esd_enable = AW_ESD_DISABLE;
+		AW_DEV_LOGI(dev, "esd_enable parse failed, user default[enable]");
+		monitor->esd_enable = AW_ESD_ENABLE;
 	} else {
-		if (!strcmp(esd_enable, "true"))
-			monitor->esd_enable = AW_ESD_ENABLE;
-		else
+		if (!strcmp(esd_enable, "false"))
 			monitor->esd_enable = AW_ESD_DISABLE;
+		else
+			monitor->esd_enable = AW_ESD_ENABLE;
 
 		AW_DEV_LOGI(dev, "parse esd-enable=[%s]",
 				monitor->esd_enable ? "true" : "false");
@@ -1177,7 +1177,7 @@ void aw87xxx_monitor_init(struct device *dev, struct aw_monitor *monitor,
 	aw_monitor_dtsi_parse(dev, monitor, dev_node);
 
 	/* get platform open dsp type */
-	//monitor->open_dsp_en = aw87xxx_dsp_isEnable();
+	monitor->open_dsp_en = aw87xxx_dsp_isEnable();
 
 	ret = sysfs_create_group(&dev->kobj, &aw_monitor_vol_adjust_group);
 	if (ret < 0)

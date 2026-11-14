@@ -33,6 +33,9 @@
 #define AWRW_DATA_BYTES			(1)
 #define AWRW_HDR_LEN			(24)
 
+/* sapphire: stock aw87xxx_dlkm.ko has no runin test hook */
+/* #define AW87XXX_RUNIN_TEST	1 */
+
 /***********************************************************
  *
  * aw87xxx codec control compatible with kernel 4.19
@@ -113,6 +116,9 @@ struct aw87xxx {
 	struct list_head list;
 
 	struct aw_monitor monitor;
+#ifdef AW87XXX_RUNIN_TEST
+	struct delayed_work adsp_status;
+#endif
 };
 
 int aw87xxx_update_profile(struct aw87xxx *aw87xxx, char *profile);

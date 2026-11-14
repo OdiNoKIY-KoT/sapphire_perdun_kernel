@@ -13,7 +13,7 @@
 #define AW_ESD_CHECK_DELAY			(1)
 
 
-#define AW_MONITOR_TIME_MIN			(1000)
+#define AW_MONITOR_TIME_MIN			(0)
 #define AW_MONITOR_TIME_MAX			(50000)
 
 

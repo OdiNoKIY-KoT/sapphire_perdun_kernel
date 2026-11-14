@@ -620,6 +620,7 @@ struct wcd_mbhc {
 
 	struct wcd_mbhc_fn *mbhc_fn;
 	bool force_linein;
+	int usbc_mode;	/* sapphire: last USB-C typec mode seen via power_supply */
 	struct device_node *fsa_np;
 	struct notifier_block fsa_nb;
 

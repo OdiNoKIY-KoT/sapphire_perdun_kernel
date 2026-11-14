@@ -987,7 +987,11 @@ extern int aw87xxx_add_codec_controls(void *codec);
 #endif /*CONFIG_SND_SOC_AWINIC_AW87XXX*/
 
 #if defined(CONFIG_SND_SOC_FS1815)
-extern void fsm_add_codec_controls(struct snd_soc_component *codec);
+extern int fsm_add_codec_controls(struct snd_soc_component *codec);
+#endif /*CONFIG_SND_SOC_FS1815*/
+
+#if defined(CONFIG_SND_SOC_LCT_AUDIO_INFO)
+extern int lct_audio_info_create_sysfs(void);
 #endif /*CONFIG_SND_SOC_FS1815*/
 
 static int msm_audrx_stub_init(struct snd_soc_pcm_runtime *rtd)
@@ -1281,6 +1285,11 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 			ARRAY_SIZE(sm_port_map),
 			sm_port_map);
 	}
+
+#if defined(CONFIG_SND_SOC_LCT_AUDIO_INFO)
+	/* sapphire: /sys/android_audio/{audio_codec,audio_pa} */
+	lct_audio_info_create_sysfs();
+#endif
 
 	snd_soc_dapm_ignore_suspend(dapm, "EAR");
 	snd_soc_dapm_ignore_suspend(dapm, "AUX");

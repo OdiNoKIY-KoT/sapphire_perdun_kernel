@@ -3,6 +3,7 @@
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 #include <linux/module.h>
+#include <linux/power_supply.h>
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/of_gpio.h>
@@ -1662,6 +1663,35 @@ static int wcd_mbhc_set_keycode(struct wcd_mbhc *mbhc)
 	return result;
 }
 
+/*
+ * sapphire: no FSA4480 USB-C audio switch is fitted; Xiaomi's qpnp-smb5
+ * exports the current typec mode instead. A USB-C analog audio adapter
+ * (typec mode 4) is reported to userspace as an inserted headset.
+ * Reconstructed from the stock sapphire mbhc_dlkm.ko.
+ */
+extern int audio_get_prop_typec_mode(void);
+
+static int wcd_mbhc_non_usb_c_event_changed(struct notifier_block *nb,
+					    unsigned long evt, void *ptr)
+{
+	struct wcd_mbhc *mbhc = container_of(nb, struct wcd_mbhc, fsa_nb);
+	int typec_mode = audio_get_prop_typec_mode();
+
+	if (typec_mode == 0 && mbhc->usbc_mode != 0) {
+		pr_err("%s:typec_mode:%d, mbhc->usbc_mode:%d\n", __func__,
+		       typec_mode, mbhc->usbc_mode);
+		snd_soc_jack_report(&mbhc->headset_jack, 0, WCD_MBHC_JACK_MASK);
+		mbhc->usbc_mode = 0;
+	} else if (typec_mode == 4 && mbhc->usbc_mode != 4) {
+		pr_err("%s:typec_mode:%d, mbhc->usbc_mode:%d\n", __func__,
+		       typec_mode, mbhc->usbc_mode);
+		snd_soc_jack_report(&mbhc->headset_jack, SND_JACK_HEADSET,
+				    WCD_MBHC_JACK_MASK);
+		mbhc->usbc_mode = 4;
+	}
+	return NOTIFY_OK;
+}
+
 #if IS_ENABLED(CONFIG_QCOM_FSA4480_I2C)
 static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 					   unsigned long mode, void *ptr)
@@ -1762,6 +1792,13 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 		mbhc->fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
 		mbhc->fsa_nb.priority = 0;
 		rc = fsa4480_reg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
+	} else {
+		mbhc->fsa_nb.notifier_call = wcd_mbhc_non_usb_c_event_changed;
+		mbhc->fsa_nb.priority = 0;
+		rc = power_supply_reg_notifier(&mbhc->fsa_nb);
+		if (rc)
+			dev_err(mbhc->component->dev,
+				"%s: power supply registration failed\n", __func__);
 	}
 
 	return rc;
@@ -1799,6 +1836,8 @@ void wcd_mbhc_stop(struct wcd_mbhc *mbhc)
 
 	if (mbhc->mbhc_cfg->enable_usbc_analog)
 		fsa4480_unreg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
+	else
+		power_supply_unreg_notifier(&mbhc->fsa_nb);
 
 	pr_debug("%s: leave\n", __func__);
 }

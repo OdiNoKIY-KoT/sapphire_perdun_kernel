@@ -5,6 +5,8 @@ pm8008_8: qcom,pm8008@8 {
 	reg = <0x8>;
 	#address-cells = <1>;
 	#size-cells = <0>;
+	interrupt-controller;
+	#interrupt-cells = <3>;
 
 	interrupt-names = "pm8008";
 	qcom,periph-map = <0x09 0x24 0xc0 0xc1>;
@@ -13,6 +15,8 @@ pm8008_8: qcom,pm8008@8 {
 	pm8008_chip: qcom,pm8008-chip@900 {
 		compatible = "qcom,pm8008-chip";
 		reg = <0x900>;
+		interrupts = <0x09 0x04 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "ocp";
 
 		PM8008_EN: qcom,pm8008-chip-en {
 			regulator-name = "pm8008-chip-en";
@@ -26,6 +30,7 @@ pm8008_8: qcom,pm8008@8 {
 		#gpio-cells = <2>;
 		interrupt-controller;
 		#interrupt-cells = <2>;
+		status = "disable";
 
 		pm8008_gpio1_active: pm8008_gpio1_active {
 			pins = "gpio1";
@@ -52,6 +57,7 @@ pm8008_9: qcom,pm8008@9 {
 		compatible = "qcom,pm8008-regulator";
 		pm8008_en-supply = <&PM8008_EN>;
 		qcom,enable-ocp-broadcast;
+		status = "disable";
 
 		L1P: qcom,pm8008-l1@4000 {
 			reg = <0x4000>;

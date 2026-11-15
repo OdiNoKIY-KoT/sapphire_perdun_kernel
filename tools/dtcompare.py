@@ -162,9 +162,43 @@ def cmp_nodes(na, nb, path, out, fmt, eq):
             cmp_nodes(na.children[cn], nb.children[cn], cp, out, fmt, eq)
 
 
+def ref_positions(files, merged):
+    """Exact phandle-cell positions of the merged tree OURS:
+    files[0] = our base compiled with `dtc -L` (all references recorded in
+    __local_fixups__), files[1:] = overlays applied on it, in order."""
+    pos = dict(F.local_fixup_positions(files[0]))
+    syms = {}
+    if "__symbols__" in merged.children:
+        for k, v in merged.children["__symbols__"].props.items():
+            syms[k] = F.strlist(v)[0]
+    for ov in files[1:]:
+        fx = F.fixup_positions(ov)
+        lfx = F.local_fixup_positions(ov)
+        for fname, frag in ov.children.items():
+            if "__overlay__" not in frag.children:
+                continue
+            fp = "/" + fname
+            if "target-path" in frag.props:
+                tgt = F.strlist(frag.props["target-path"])[0]
+            else:
+                lab = fx.get((fp, "target"), {}).get(0)
+                if lab is None or lab not in syms:
+                    continue
+                tgt = syms[lab]
+            ovp = fp + "/__overlay__"
+            for n in frag.children["__overlay__"].walk():
+                np = n.path()
+                rel = np[len(ovp):]
+                tp = (tgt.rstrip("/") + rel) if rel else tgt
+                for pn in n.props:
+                    offs = set(fx.get((np, pn), {}).keys()) | lfx.get((np, pn), set())
+                    pos[(tp, pn)] = offs
+    return pos
+
+
 def cmp_base(a, b, out, refs=None):
     pa, pb = F.phandle_map(a), F.phandle_map(b)
-    exact = F.local_fixup_positions(refs) if refs is not None else None
+    exact = ref_positions(refs, b) if refs is not None else None
 
     def eq(path, pn, x, y):
         if pn in IGN_PROPS:
@@ -214,7 +248,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("stock")
     ap.add_argument("ours")
-    ap.add_argument("--refs", help="our tree compiled with dtc -L")
+    ap.add_argument("--refs", nargs="+", help="our base compiled with dtc -L, "
+                    "followed by the overlays applied to it (exact reference "
+                    "positions)")
     ap.add_argument("-q", action="store_true", help="summary only")
     ap.add_argument("--max", type=int, default=100000)
     ap.add_argument("--ignore-phandle-presence", action="store_true")
@@ -228,7 +264,7 @@ def main():
         cmp_overlay(a, b, out)
     else:
         mode = "base"
-        cmp_base(a, b, out, F.load(args.refs) if args.refs else None)
+        cmp_base(a, b, out, [F.load(x) for x in args.refs] if args.refs else None)
     if args.ignore_phandle_presence:
         out = [d for d in out if not d[0].startswith("phandle-only")]
     bytesame = da == db

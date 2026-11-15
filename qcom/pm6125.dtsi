@@ -11,19 +11,13 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		pm6125_revid: qcom,revid@100 {
-			compatible = "qcom,qpnp-revid";
-			reg = <0x100>;
-		};
-
 		qcom,power-on@800 {
 			compatible = "qcom,qpnp-power-on";
 			reg = <0x800>;
 			interrupts = <0x0 0x8 0x0 IRQ_TYPE_EDGE_BOTH>,
 					<0x0 0x8 0x1 IRQ_TYPE_EDGE_BOTH>,
-					<0x0 0x8 0x3 IRQ_TYPE_EDGE_BOTH>,
 					<0x0 0x8 0x5 IRQ_TYPE_EDGE_BOTH>;
-			interrupt-names = "kpdpwr", "resin", "kpdpwr-bark", "kpdpwr-resin-bark";
+			interrupt-names = "kpdpwr", "resin", "kpdpwr-resin-bark";
 			qcom,pon-dbc-delay = <15625>;
 			qcom,kpdpwr-sw-debounce;
 			qcom,system-reset;
@@ -33,7 +27,6 @@
 				qcom,pon-type = <PON_POWER_ON_TYPE_KPDPWR>;
 				qcom,pull-up = <1>;
 				linux,code = <KEY_POWER>;
-				qcom,use-bark;
 			};
 
 			qcom,pon_2 {
@@ -106,11 +99,6 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			#thermal-sensor-cells = <1>;
-		};
-
-		pm6125_misc: qcom,misc@900 {
-			compatible = "qcom,qpnp-misc";
-			reg = <0x900>;
 		};
 
 		pm6125_tz: qcom,temp-alarm@2400 {

@@ -35,10 +35,95 @@ def fmt_cell(pn, v):
     return "%d" % v
 
 
+class Symbolizer:
+    """Map raw binding numbers back to dt-bindings macro names (cosmetic:
+    the macros expand to exactly the same numbers)."""
+    CLK_HDRS = {"gcc": "clock/qcom,gcc-khaje.h", "rpmcc": "clock/qcom,rpmcc.h",
+                "gpucc": "clock/qcom,gpucc-khaje.h",
+                "dispcc": "clock/qcom,dispcc-khaje.h"}
+    ICC_HDR = "interconnect/qcom,bengal.h"
+    CLK_PROPS = {"clocks", "assigned-clocks", "assigned-clock-parents",
+                 "clock-names-ph"}
+
+    def __init__(self, incdir):
+        self.inc = incdir
+        self.clk = {}     # label -> {num: name}
+        self.rst = {}
+        self.icc = {}
+        self.used = set()
+        if not incdir:
+            return
+        for lab, h in self.CLK_HDRS.items():
+            c, r = {}, {}
+            cur = c
+            try:
+                for line in open("%s/dt-bindings/%s" % (incdir, h)):
+                    if re.search(r"reset", line, re.I) and line.strip().startswith("/*"):
+                        cur = r
+                    m = re.match(r"#define\s+(\w+)\s+(\d+)\s*$", line.strip())
+                    if m:
+                        cur.setdefault(int(m.group(2)), m.group(1))
+            except OSError:
+                continue
+            self.clk[lab], self.rst[lab] = c, r
+        try:
+            for line in open("%s/dt-bindings/%s" % (incdir, self.ICC_HDR)):
+                m = re.match(r"#define\s+((MASTER|SLAVE)_\w+)\s+(\d+)", line.strip())
+                if m:
+                    self.icc.setdefault(int(m.group(3)), m.group(1))
+        except OSError:
+            pass
+
+    def apply(self, pn, cs, refs):
+        out = {}
+        if not cs:
+            return out
+        if pn in self.CLK_PROPS or pn == "resets":
+            tab = self.clk if pn != "resets" else self.rst
+            for off, r in refs.items():
+                lab = r[1:]
+                i = off // 4 + 1
+                if lab in tab and i < len(cs) and (i * 4) not in refs:
+                    name = tab[lab].get(cs[i])
+                    if name:
+                        out[i * 4] = name
+                        self.used.add(self.CLK_HDRS[lab])
+        elif pn == "interconnects" and self.icc:
+            for off in refs:
+                i = off // 4 + 1
+                if i < len(cs) and (i * 4) not in refs and cs[i] in self.icc:
+                    out[i * 4] = self.icc[cs[i]]
+                    self.used.add(self.ICC_HDR)
+        elif pn == "interrupts" and not refs and len(cs) % 3 == 0:
+            trip = [cs[i:i + 3] for i in range(0, len(cs), 3)]
+            types = {1: "IRQ_TYPE_EDGE_RISING", 2: "IRQ_TYPE_EDGE_FALLING",
+                     3: "IRQ_TYPE_EDGE_BOTH", 4: "IRQ_TYPE_LEVEL_HIGH",
+                     8: "IRQ_TYPE_LEVEL_LOW"}
+            if all(t[0] in (0, 1) and t[2] in types for t in trip):
+                for k, t in enumerate(trip):
+                    out[k * 12] = "GIC_SPI" if t[0] == 0 else "GIC_PPI"
+                    out[k * 12 + 8] = types[t[2]]
+                self.used.add("interrupt-controller/arm-gic.h")
+        return out
+
+    def includes(self):
+        return ["#include <dt-bindings/%s>" % h for h in sorted(self.used)]
+
+
+SYM = Symbolizer(None)
+
+
 def fmt_prop(pn, b, refs, indent):
     """refs: {byteoffset: '&label'}"""
+    if len(b) % 4 == 0 and len(b) and not (F.strlist(b) is not None and not refs):
+        extra = SYM.apply(pn, F.cells(b), refs)
+        if extra:
+            refs = dict(refs)
+            refs.update(extra)
     if len(b) == 0:
         return "%s%s;" % (indent, pn)
+    if b == b"\0":
+        return '%s%s = "";' % (indent, pn)
     if not refs:
         sl = F.strlist(b)
         if sl is not None and not BYTEPROPS.search(pn):
@@ -59,9 +144,18 @@ def fmt_prop(pn, b, refs, indent):
     # wrap long cell lists
     lines = []
     cur = []
+    group = 6 if (pn == "interrupts" and len(toks) % 3 == 0) else 8
     for t in toks:
+        # start a new line at a reference once the line is long enough,
+        # so that "&provider args" groups stay together
+        if cur and t.startswith("&") and len(cur) >= 4:
+            lines.append(" ".join(cur))
+            cur = []
         cur.append(t)
-        if len(cur) >= 8:
+        if len(cur) >= group and not refs:
+            lines.append(" ".join(cur))
+            cur = []
+        elif len(cur) >= 12:
             lines.append(" ".join(cur))
             cur = []
     if cur:
@@ -70,6 +164,39 @@ def fmt_prop(pn, b, refs, indent):
         return "%s%s = <%s>;" % (indent, pn, lines[0] if lines else "")
     pad = indent + " " * (len(pn) + 4)
     return "%s%s = <%s>;" % (indent, pn, ("\n" + pad).join(lines))
+
+
+def ordered_props(n):
+    """Nodes created by fdtoverlay/fdtoverlaymerge carry their properties
+    in reverse source order; restore a natural order for readability when
+    'compatible' ended up last."""
+    items = list(n.props.items())
+    names = [k for k, _ in items if k not in ("phandle", "linux,phandle")]
+    if len(names) > 1 and names[-1] == "compatible":
+        items.reverse()
+    return items
+
+
+def ordered_children(n, reverse_hint):
+    items = list(n.children.items())
+    if reverse_hint:
+        items.reverse()
+    return items
+
+
+RAW_OK = re.compile(r"^(#.*|reg|ranges|interrupts|status|cell-index|pas-id|"
+                    r"qcom,msm-id|qcom,board-id|qcom,pmic-id|clock-ids|"
+                    r".*-(rates?|hz|mv|uv|ua|ma|us|ms|voltage|current|level|"
+                    r"levels|load|freq|frequency|size|cells|index|id|ids|"
+                    r"addr|offset|en|num|count|delay|config|configs|"
+                    r"presets|table|range|range-kbps|kbps|mask|bins|bin)|"
+                    r".*(-names|-cells)$|virtual-addr-pool|iova.*|"
+                    r"qcom,iommu-dma-addr-pool|reg-.*)$")
+
+
+HANDLE_LIKE = re.compile(r"(handle|-region$|-src$|rproc|parent$|-node$|"
+                         r"-dev$|^qcom,cpus$|-phandle$|^qcom,msm_audio_ssr_devs$|"
+                         r"-ph$|^qcom,ipc|^qcom,glink|^remote-|^cpus$)")
 
 
 def ident_ok(lab):
@@ -114,7 +241,7 @@ class OverlaySrc:
         out.append("%s};" % ind)
 
     def body(self, n, path, ind, out):
-        for pn, v in n.props.items():
+        for pn, v in ordered_props(n):
             if pn in ("phandle", "linux,phandle"):
                 continue
             out.append(fmt_prop(pn, v, self.refs(path, pn, v), ind))
@@ -235,12 +362,16 @@ class BaseCtx:
             return refs, False
         # unknown property: flag if any cell looks like a phandle of a
         # labelled node (likely a reference)
+        if RAW_OK.match(pn):
+            return {}, False
+        if HANDLE_LIKE.search(pn) and all(self.ref(c) for c in cs):
+            return dict((i * 4, self.ref(c)) for i, c in enumerate(cs)), False
         sus = any(c in self.ph and c > 0 and self.labels.get(self.ph[c])
                   for c in cs)
         return {}, sus
 
 
-def delta(stock, ours):
+def delta(stock, ours, inc=None, exc=None):
     S = BaseCtx(stock)
     O = BaseCtx(ours)
     out = []
@@ -257,6 +388,16 @@ def delta(stock, ours):
     blocks = OrderedDict()   # anchor path -> list of (relpath, kind, data)
 
     def add(path, item):
+        if item[0] == "node":
+            fp = item[3]
+        elif item[0] == "label":
+            fp = path
+        else:
+            fp = path.rstrip("/") + "/" + item[1]
+        if inc and not re.search(inc, fp):
+            return
+        if exc and re.search(exc, fp):
+            return
         ap, an = anchor_of(path)
         blocks.setdefault((ap, an), []).append((path, item))
 
@@ -270,11 +411,12 @@ def delta(stock, ours):
     def full_node(n, path, ind, lines):
         labs = S.labels.get(path, [])
         lines.append("%s%s%s {" % (ind, "".join(l + ": " for l in labs), n.name))
-        for pn, v in n.props.items():
+        rev = list(n.props.items()) != ordered_props(n)
+        for pn, v in ordered_props(n):
             if pn in ("phandle", "linux,phandle"):
                 continue
             lines.append(emit_prop(pn, v, ind + "\t"))
-        for cn, c in n.children.items():
+        for cn, c in ordered_children(n, rev):
             full_node(c, path.rstrip("/") + "/" + cn, ind + "\t", lines)
         lines.append("%s};" % ind)
 
@@ -385,7 +527,15 @@ def main():
     ap.add_argument("files", nargs="+")
     ap.add_argument("--frags")
     ap.add_argument("--no-root", action="store_true")
+    ap.add_argument("--inc", default="/home/angel/sapphire/ws/kernel_platform/"
+                    "msm-kernel/scripts/dtc/include-prefixes")
+    ap.add_argument("--no-sym", action="store_true")
+    ap.add_argument("--include", help="regex on node/prop path (delta)")
+    ap.add_argument("--exclude", help="regex on node/prop path (delta)")
     a = ap.parse_args()
+    global SYM
+    if not a.no_sym:
+        SYM.__init__(a.inc)
     if a.mode == "overlay":
         o = OverlaySrc(F.load(a.files[0]))
         lines = o.emit(parse_frags(a.frags) if a.frags else None,
@@ -393,7 +543,12 @@ def main():
         if o.genlabels:
             sys.stderr.write("generated labels: %s\n" % o.genlabels)
     else:
-        lines = delta(F.load(a.files[0]), F.load(a.files[1]))
+        lines = delta(F.load(a.files[0]), F.load(a.files[1]), a.include,
+                      a.exclude)
+    inc = SYM.includes()
+    if inc:
+        print("\n".join(inc))
+        print("")
     print("\n".join(lines))
 
 

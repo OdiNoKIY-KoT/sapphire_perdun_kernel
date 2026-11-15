@@ -32,6 +32,7 @@
 		USB3_GDSC-supply = <&gcc_usb30_prim_gdsc>;
 		dpdm-supply = <&usb2_phy0>;
 
+		qcom,msm-probe-core-init;
 		qcom,core-clk-rate = <133333333>;
 		qcom,core-clk-rate-hs = <66666667>;
 		qcom,num-gsi-evt-buffs = <0x3>;
@@ -77,10 +78,6 @@
 			snps,hird-threshold = /bits/ 8 <0x10>;
 			snps,usb3-u1u2-disable;
 			snps,usb3_lpm_capable;
-			snps,usb2-lpm-disable;
-			snps,dis-u1-entry-quirk;
-			snps,dis-u2-entry-quirk;
-			snps,usb2-gadget-lpm-disable;
 			usb-core-id = <0>;
 			maximum-speed = "high-speed";
 			dr_mode = "otg";
@@ -120,10 +117,8 @@
 	/* Primary USB port related High Speed PHY */
 	usb2_phy0: hsphy@1613000 {
 		compatible = "qcom,usb-hsphy-snps-femto";
-		reg = <0x1613000 0x110>,
-			<0x1612000 0x4>;
-		reg-names = "hsusb_phy_base",
-			"eud_enable_reg";
+		reg = <0x1613000 0x110>;
+		reg-names = "hsusb_phy_base";
 
 		vdd-supply = <&L4A>;
 		vdda18-supply = <&L12A>;
@@ -139,7 +134,11 @@
 		reset-names = "phy_reset";
 		qcom,param-override-seq =
 			<0xa6 0x6c>,  /* override_x0 */
-			<0x9f 0x70>,  /* override_x1 */
+			<0x8c 0x70>,  /* override_x1 */
+			<0x16 0x74>;  /* override_x2 */
+		qcom,param-override-seq-no-panel =
+			<0xa6 0x6c>,  /* override_x0 */
+			<0x88 0x70>,  /* override_x1 */
 			<0x2e 0x74>;  /* override_x2 */
 	};
 

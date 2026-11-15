@@ -72,6 +72,9 @@ compile() {
 
 # ------------------------------------------------------------------ compile
 SOURCES="qcom/khaje.dts
+qcom/khajeg.dts
+qcom/khajep.dts
+qcom/khajeq.dts
 qcom/sapphire-overlay.dts
 qcom/sapphiren-overlay.dts
 video/khaje-vidc.dts
@@ -86,22 +89,33 @@ audio/sapphire-audio-overlay.dts
 display/sapphire-sde-display-overlay.dts"
 for s in $SOURCES; do compile "$s"; done
 if [ -d "$TOP/reference" ]; then
-	for s in "$TOP"/reference/*.dts; do compile "reference/$(basename "$s")"; done
+	for s in "$TOP"/reference/*.dts "$TOP"/reference/parts/*.dts; do
+		compile "${s#"$TOP"/}"
+	done
 fi
 
 # ------------------------------------------------------------------ merge
-# base DTB: techpack base overlays, in the order the stock build applied them
-KHAJE_TECHPACKS="$O/video/khaje-vidc.dtbo $O/camera/khaje-camera.dtbo \
- $O/wlan/khaje-wlan.dtbo $O/audio/khaje-audio.dtbo $O/graphics/khaje-gpu.dtbo \
- $O/display/khaje-sde.dtbo $O/bt/khaje-bt.dtbo"
-# shellcheck disable=SC2086
-"$FDTOVERLAY" -i "$O/qcom/khaje.dtb" -o "$M/khaje.dtb" $KHAJE_TECHPACKS
+# Base DTBs: the techpack base overlays that match each SoC variant, in the
+# order the stock build applied them (recovered from the stock phandle order).
+TP_VIDC=$O/video/khaje-vidc.dtbo
+TP_CAM=$O/camera/khaje-camera.dtbo
+TP_WLAN=$O/wlan/khaje-wlan.dtbo
+TP_AUD=$O/audio/khaje-audio.dtbo
+TP_GPU=$O/graphics/khaje-gpu.dtbo
+TP_SDE=$O/display/khaje-sde.dtbo
+TP_BT=$O/bt/khaje-bt.dtbo
+"$FDTOVERLAY" -i "$O/qcom/khaje.dtb"  -o "$M/khaje.dtb"  "$TP_VIDC" "$TP_CAM" "$TP_WLAN" "$TP_AUD" "$TP_GPU" "$TP_SDE" "$TP_BT"
+"$FDTOVERLAY" -i "$O/qcom/khajeg.dtb" -o "$M/khajeg.dtb" "$TP_VIDC" "$TP_WLAN" "$TP_AUD" "$TP_GPU" "$TP_SDE" "$TP_BT"
+"$FDTOVERLAY" -i "$O/qcom/khajep.dtb" -o "$M/khajep.dtb" "$TP_VIDC" "$TP_GPU"
+"$FDTOVERLAY" -i "$O/qcom/khajeq.dtb" -o "$M/khajeq.dtb" "$TP_GPU"
+# merge_dtbs.py emits khaje (msm-id 518 + 586) once per msm-id
 for id in 518 586; do
 	cp "$M/khaje.dtb" "$M/khaje-$id.dtb"
 	"$FDTPUT" -t i "$M/khaje-$id.dtb" / qcom,msm-id "$id" 65536
 done
+cp "$O/reference/khajep-qrd-overlay-dtb.dtb" "$M/khajep-qrd-overlay.dtb" 2>/dev/null || true
 
-# board overlays: kernel overlay + camera, audio, display(+touch) techpacks
+# sapphire/sapphiren: kernel overlay + camera, audio, display(+touch) techpacks
 SAPPHIRE_TECHPACKS="$O/camera/sapphire-camera-sensor.dtbo \
  $O/audio/sapphire-audio-overlay.dtbo $O/display/sapphire-sde-display-overlay.dtbo"
 for b in sapphire sapphiren; do
@@ -111,26 +125,27 @@ for b in sapphire sapphiren; do
 done
 
 # ------------------------------------------------------------------ images
-# Same entry order as the stock images (see reference/ENTRIES).
-DTB_LIST="$M/khaje-518.dtb $M/khaje-586.dtb"
+# Entry order/composition of the stock images: reference/ENTRIES
+DTB_LIST=""
 DTBO_LIST=""
-if [ -f "$TOP/reference/ENTRIES" ]; then
-	DTB_LIST=""
-	while read -r kind name; do
-		case "$kind" in
-		dtb)  case "$name" in
-			khaje-518|khaje-586) DTB_LIST="$DTB_LIST $M/$name.dtb" ;;
-			*) DTB_LIST="$DTB_LIST $O/reference/$name.dtb" ;;
-			esac ;;
-		dtbo) case "$name" in
-			sapphire|sapphiren) DTBO_LIST="$DTBO_LIST $M/$name.dtbo" ;;
-			*) DTBO_LIST="$DTBO_LIST $O/reference/$name.dtbo" ;;
-			esac ;;
-		esac
-	done < <(grep -v '^#' "$TOP/reference/ENTRIES")
-else
-	DTBO_LIST="$M/sapphire.dtbo $M/sapphiren.dtbo"
-fi
+while read -r kind name tps; do
+	case "$kind" in
+	dtb)  DTB_LIST="$DTB_LIST $M/$name.dtb" ;;
+	dtbo)
+		if [ ! -f "$M/$name.dtbo" ]; then
+			if [ -n "$tps" ]; then
+				ovs=""
+				for t in $tps; do ovs="$ovs $O/reference/$t.dtbo"; done
+				# shellcheck disable=SC2086
+				"$FDTOVERLAYMERGE" -i "$O/reference/$name.dtbo" -o "$M/$name.dtbo" \
+					$ovs >/dev/null 2>&1
+			else
+				cp "$O/reference/$name.dtbo" "$M/$name.dtbo"
+			fi
+		fi
+		DTBO_LIST="$DTBO_LIST $M/$name.dtbo" ;;
+	esac
+done < <(grep -v '^#' "$TOP/reference/ENTRIES")
 # shellcheck disable=SC2086
 cat $DTB_LIST > "$OUT/dtb.img"
 # shellcheck disable=SC2086

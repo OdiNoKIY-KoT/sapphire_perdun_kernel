@@ -1,0 +1,54 @@
+# kind name [techpack parts merged with fdtoverlaymerge, in order]
+dtb khaje-518
+dtb khaje-586
+dtb khajeg
+dtb khajep-qrd-overlay
+dtb khajep
+dtb khajeq
+dtbo khaje-atp-518 parts/khaje-atp-518-audio parts/khaje-atp-518-display
+dtbo khaje-atp-586 parts/khaje-atp-518-audio
+dtbo khaje-idp-nopmi-518 parts/khaje-idp-nopmi-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-atp-518-audio parts/khaje-idp-nopmi-518-display
+dtbo khaje-idp-nopmi-586 parts/khaje-idp-nopmi-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-atp-518-audio
+dtbo khaje-idp-586-518 parts/khaje-idp-586-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-atp-518-audio parts/khaje-idp-586-518-display
+dtbo khaje-idp-with-pm8010 parts/khaje-atp-518-audio
+dtbo khaje-idp-usbc-audio-586 parts/khaje-idp-usbc-audio-586-audio
+dtbo khaje-idp-usbc-audio-518 parts/khaje-idp-586-518-camera parts/khaje-idp-usbc-audio-586-audio
+dtbo khaje-idps-90hz-586 parts/khaje-idp-586-518-camera parts/khaje-atp-518-audio parts/khaje-idps-90hz-586-display
+dtbo khaje-idps-90hz-518 parts/khaje-idp-586-518-camera parts/khaje-idp-586-518-camera parts/khaje-atp-518-audio parts/khaje-idps-90hz-586-display
+dtbo khaje-qrd-hvdcp3p5 parts/khaje-idp-586-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-hvdcp3p5-audio parts/khaje-qrd-hvdcp3p5-display
+dtbo khaje-qrd-nopmi-518 parts/khaje-qrd-nopmi-518-display parts/khaje-idp-nopmi-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-hvdcp3p5-audio parts/khaje-qrd-nopmi-518-display2
+dtbo khaje-qrd-nopmi-586 parts/khaje-qrd-nopmi-518-display parts/khaje-idp-nopmi-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-hvdcp3p5-audio
+dtbo khaje-qrd-nowcd9375-518 parts/khaje-idp-586-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-nowcd9375-518-audio parts/khaje-qrd-hvdcp3p5-display
+dtbo khaje-qrd-nowcd9375-586 parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-nowcd9375-518-audio
+dtbo khaje-qrd parts/khaje-idp-586-518-camera parts/khaje-idp-nopmi-518-nfc parts/khaje-qrd-hvdcp3p5-audio parts/khaje-qrd-hvdcp3p5-display
+dtbo khajeg-atp 
+dtbo khajeg-idp-nopmi 
+dtbo khajeg-idp parts/khajeg-idp-camera parts/khaje-atp-518-audio parts/khaje-idp-586-518-display
+dtbo khajeg-idp-with-pm8010 
+dtbo khajeg-idp-usbc-audio 
+dtbo khajeg-idps-90hz parts/khaje-atp-518-audio parts/khaje-idps-90hz-586-display
+dtbo khajeg-qrd-hvdcp3p5 parts/khajeg-idp-camera parts/khaje-qrd-hvdcp3p5-audio parts/khaje-qrd-hvdcp3p5-display
+dtbo khajeg-qrd-nopmi parts/khaje-qrd-nopmi-518-display parts/khaje-qrd-hvdcp3p5-audio
+dtbo khajeg-qrd-nowcd9375 
+dtbo khajeg-qrd parts/khajeg-idp-camera parts/khajeg-qrd-audio parts/khaje-qrd-hvdcp3p5-display
+dtbo khajep-atp 
+dtbo khajep-idp-nopmi 
+dtbo khaje-idp-561 
+dtbo khajep-idp-with-pm8010 
+dtbo khajep-idp-usbc-audio 
+dtbo khajep-idps-90hz 
+dtbo khajep-qrd-hvdcp3p5 
+dtbo khajep-qrd-nopmi parts/khaje-qrd-nopmi-518-display
+dtbo khajep-qrd-nowcd9375 
+dtbo khajeq-atp 
+dtbo khajeq-idp-nopmi 
+dtbo khaje-idp-562 
+dtbo khajeq-idp-with-pm8010 
+dtbo khajeq-idp-usbc-audio 
+dtbo khajeq-idps-90hz 
+dtbo khajeq-qrd-hvdcp3p5 
+dtbo khajeq-qrd-nopmi parts/khaje-qrd-nopmi-518-display
+dtbo khajeq-qrd-nowcd9375 
+dtbo khajeq-qrd 
+dtbo sapphire
+dtbo sapphiren

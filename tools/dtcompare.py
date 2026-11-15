@@ -25,6 +25,7 @@ from collections import OrderedDict
 import fdtlib as F
 
 IGN_PROPS = {"phandle", "linux,phandle"}
+RENUM_LOG = None
 META_NODES = {"__local_fixups__", "__fixups__"}
 
 
@@ -37,7 +38,11 @@ def normalise_overlay(root):
     fx = F.fixup_positions(root)          # (path,prop) -> {off: label}
     lfx = F.local_fixup_positions(root)   # (path,prop) -> {off}
     ph = F.phandle_map(root)              # value -> overlay path
-    frag_target = {}
+    own_syms = {}
+    if "__symbols__" in root.children:
+        for k, v in root.children["__symbols__"].props.items():
+            own_syms[k] = F.strlist(v)[0]
+    raw_target = {}
     for fname, frag in root.children.items():
         if "__overlay__" not in frag.children:
             continue
@@ -45,24 +50,34 @@ def normalise_overlay(root):
         if "target" in frag.props:
             lab = fx.get((fpath, "target"), {}).get(0)
             if lab is not None:
-                t = "&" + lab
+                # a fixup to a label the overlay defines itself (fdtoverlaymerge
+                # or one compilation unit) is the same as a local reference
+                t = ("int", own_syms[lab]) if lab in own_syms else ("ext", "&" + lab)
             elif 0 in lfx.get((fpath, "target"), set()):
-                t = "REFTARGET(%s)" % ph.get(F.cells(frag.props["target"])[0])
+                t = ("int", ph.get(F.cells(frag.props["target"])[0], "?"))
             else:
-                t = "RAWTARGET(0x%x)" % F.cells(frag.props["target"])[0]
+                t = ("ext", "RAWTARGET(0x%x)" % F.cells(frag.props["target"])[0])
         elif "target-path" in frag.props:
-            t = F.strlist(frag.props["target-path"])[0]
+            t = ("ext", F.strlist(frag.props["target-path"])[0])
         else:
-            t = "?"
-        frag_target[fpath + "/__overlay__"] = t
+            t = ("ext", "?")
+        raw_target[fpath + "/__overlay__"] = t
 
-    def norm_path(p):
-        for fp, t in frag_target.items():
-            if p == fp:
-                return t
-            if p.startswith(fp + "/"):
-                return t + p[len(fp):]
+    frag_target = {}
+
+    def norm_path(p, depth=0):
+        for fp, t in raw_target.items():
+            if p == fp or p.startswith(fp + "/"):
+                rest = p[len(fp):]
+                if t[0] == "ext":
+                    return t[1] + rest
+                if depth > 20:
+                    return "LOOP"
+                return norm_path(t[1], depth + 1) + rest
         return p
+
+    for fp in raw_target:
+        frag_target[fp] = norm_path(fp)
 
     def norm_val(path, pn, v):
         if pn in IGN_PROPS:
@@ -89,17 +104,28 @@ def normalise_overlay(root):
             merge(dst.children[cn], c, srcpath + "/" + cn)
 
     for fp, t in frag_target.items():
-        if t not in merged:
-            merged[t] = F.Node(t)
-        merge(merged[t], root.get(fp), fp)
+        # t is "&label/sub/path" or "/abs/path": merge at the nested node
+        if t.startswith("&"):
+            parts = t.split("/")
+            key, sub = parts[0], parts[1:]
+        else:
+            key, sub = "/", [x for x in t.split("/") if x]
+        if key not in merged:
+            merged[key] = F.Node(key)
+        dst = merged[key]
+        for comp in sub:
+            if comp not in dst.children:
+                dst.children[comp] = F.Node(comp, dst)
+            dst = dst.children[comp]
+        merge(dst, root.get(fp), fp)
     rootprops = OrderedDict((k, (v, ())) for k, v in root.props.items())
     syms = {}
     if "__symbols__" in root.children:
         for k, v in root.children["__symbols__"].props.items():
-            syms[k] = norm_path(F.strlist(v)[0])
+            syms[k] = tuple(norm_path(x) for x in F.strlist(v))
     others = [c for c in root.children
               if c not in META_NODES and c != "__symbols__"
-              and "/" + c + "/__overlay__" not in frag_target]
+              and "/" + c + "/__overlay__" not in raw_target]
     return rootprops, merged, syms, others
 
 
@@ -200,6 +226,8 @@ def cmp_base(a, b, out, refs=None):
     pa, pb = F.phandle_map(a), F.phandle_map(b)
     exact = ref_positions(refs, b) if refs is not None else None
 
+    renumbered = []
+
     def eq(path, pn, x, y):
         if pn in IGN_PROPS:
             return True
@@ -213,6 +241,8 @@ def cmp_base(a, b, out, refs=None):
                 if i in pos:
                     if pa.get(cx, "?a") != pb.get(cy, "?b"):
                         return False
+                    if cx != cy:
+                        renumbered.append((path, pn, i // 4, cx, cy, pb.get(cy)))
                 elif cx != cy:
                     return False
             return x[len(x) - len(x) % 4:] == y[len(y) - len(y) % 4:]
@@ -229,6 +259,10 @@ def cmp_base(a, b, out, refs=None):
         return True
 
     cmp_nodes(a, b, "/", out, lambda v: v, eq)
+    if exact is not None and RENUM_LOG:
+        with open(RENUM_LOG, "w") as f:
+            for r in renumbered:
+                f.write("%s :: %s cell %d stock=%d ours=%d -> %s\n" % r)
     # re-render values with phandle annotations
     for i, d in enumerate(out):
         k, p, pn, x, y = d
@@ -254,7 +288,11 @@ def main():
     ap.add_argument("-q", action="store_true", help="summary only")
     ap.add_argument("--max", type=int, default=100000)
     ap.add_argument("--ignore-phandle-presence", action="store_true")
+    ap.add_argument("--renum-log", help="write reference cells whose phandle "
+                    "number differs from stock (exact mode)")
     args = ap.parse_args()
+    global RENUM_LOG
+    RENUM_LOG = args.renum_log
     da = open(args.stock, "rb").read()
     db = open(args.ours, "rb").read()
     a, b = F.parse_dtb(da)[0], F.parse_dtb(db)[0]

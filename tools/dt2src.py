@@ -215,7 +215,10 @@ class OverlaySrc:
         self.labels = {}   # overlay path -> [labels]
         if "__symbols__" in root.children:
             for lab, v in root.children["__symbols__"].props.items():
-                self.labels.setdefault(F.strlist(v)[0], []).append(lab)
+                # fdtoverlaymerge appends paths when two merged overlays
+                # define the same label: label every one of them
+                for pth in F.strlist(v):
+                    self.labels.setdefault(pth, []).append(lab)
         self.genlabels = {}
 
     def label_for(self, path):

@@ -35,12 +35,13 @@ set -euo pipefail
 TOP=$(cd "$(dirname "$0")" && pwd)
 KERNEL_DIR=${KERNEL_DIR:-$TOP/../kernel_platform/msm-kernel}
 CAMERA_KERNEL_DIR=${CAMERA_KERNEL_DIR:-$TOP/../vendor/qcom/opensource/camera-kernel}
-QDTC=${QDTC:-/home/angel/sapphire/srcpool/_tools/k6/qdtc}
-DTC=${DTC:-$QDTC/dtc}
-FDTOVERLAY=${FDTOVERLAY:-$QDTC/fdtoverlay}
-FDTOVERLAYMERGE=${FDTOVERLAYMERGE:-$QDTC/fdtoverlaymerge}
-FDTPUT=${FDTPUT:-$QDTC/fdtput}
-MKDTBOIMG=${MKDTBOIMG:-/home/angel/sapphire/srcpool/_tools/k6/libufdt/utils/src/mkdtboimg.py}
+QDTC=${QDTC:-}   # dir with the CLO dtc fork tools (dtc, fdtoverlay, fdtoverlaymerge, fdtput)
+tool() { if [ -n "$QDTC" ] && [ -x "$QDTC/$1" ]; then echo "$QDTC/$1"; else command -v "$1" || echo "$1"; fi; }
+DTC=${DTC:-$(tool dtc)}
+FDTOVERLAY=${FDTOVERLAY:-$(tool fdtoverlay)}
+FDTOVERLAYMERGE=${FDTOVERLAYMERGE:-$(tool fdtoverlaymerge)}
+FDTPUT=${FDTPUT:-$(tool fdtput)}
+MKDTBOIMG=${MKDTBOIMG:-$(command -v mkdtboimg.py || echo mkdtboimg.py)}
 OUT=${OUT:-$TOP/out}
 
 DTC_INCLUDE="$KERNEL_DIR/scripts/dtc/include-prefixes"

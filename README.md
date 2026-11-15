@@ -46,3 +46,9 @@ all 47 DTBO entries and the 4 applied combinations are equivalent; 22 DTBO
 entries and dtb #3 are even byte-identical. Remaining non-semantic
 differences: phandle numbering of a few nodes, node/property order, FDT
 string-table layout.
+
+## Tools
+
+- `dtc`, `fdtoverlay`, `fdtput` and **`fdtoverlaymerge`** from the CLO dtc fork (`kernel_platform/external/dtc` in the KERNEL.PLATFORM manifests); point `QDTC=<dir>` at its build dir or put them in `PATH`.
+- `mkdtboimg.py` from AOSP `system/libufdt/utils/src` (set `MKDTBOIMG=` or put it in `PATH`).
+- `KERNEL_DIR` (default `../kernel_platform/msm-kernel`) provides `include/dt-bindings`; `qti_power_supply_iio.h` there must carry the stock sapphire `PSY_IIO` numbering.

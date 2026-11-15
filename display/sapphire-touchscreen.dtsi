@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Redmi Note 13 4G (sapphire) touchscreen: Xiaomi touch framework +
+ * FocalTech FT8720 (focaltech,fts) on QUP SE2 I2C, plus the Qualcomm
+ * reference synaptics/novatek nodes (disabled), reconstructed from the
+ * stock dtbo.img.  Replaces creek's touchscreen.dtsi.
+ */
+
+&soc {
+	xiaomi_touch {
+		touch,name = "xiaomi-touch";
+		compatible = "xiaomi-touch";
+		status = "okay";
+	};
+};
+
+&qupv3_se2_i2c {
+	qcom,i2c-touch-active = "focaltech,fts";
+	status = "okay";
+
+	focaltech@38 {
+		status = "okay";
+		compatible = "focaltech,fts";
+		reg = <0x38>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <80 2>;
+		focaltech,avdd-gpio = <&tlmm 36 0>;
+		focaltech,reset-gpio = <&tlmm 86 1>;
+		focaltech,irq-gpio = <&tlmm 80 2>;
+		focaltech,max-touch-number = <10>;
+		focaltech,display-coords = <0 0 17279 38399>;
+		panel = <&dsi_n7_38_0c_0a_video>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active &ts_avdd>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+	};
+};
+
+&qupv3_se2_i2c {
+	qcom,i2c-touch-active = "synaptics,tcm-i2c";
+	status = "okay";
+
+	synaptics_tcm@20 {
+		compatible = "synaptics,tcm-i2c";
+		reg = <0x20>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <80 8200>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		synaptics,irq-gpio = <&tlmm 80 8200>;
+		synaptics,irq-on-state = <0>;
+		synaptics,reset-gpio = <&tlmm 86 0>;
+		synaptics,reset-on-state = <0>;
+		synaptics,reset-active-ms = <20>;
+		synaptics,reset-delay-ms = <200>;
+		synaptics,power-delay-ms = <200>;
+		synaptics,ubl-i2c-addr = <0x20>;
+		synaptics,extend_report;
+		synaptics,firmware-name = "synaptics_firmware_k.img";
+		panel = <&dsi_td4330_truly_v2_video &dsi_td4330_truly_v2_cmd>;
+	};
+
+	novatek@62 {
+		compatible = "novatek,NVT-ts";
+		reg = <0x62>;
+		status = "ok";
+		interrupt-parent = <&tlmm>;
+		interrupts = <80 8200>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		novatek,reset-gpio = <&tlmm 86 0>;
+		novatek,irq-gpio = <&tlmm 80 8200>;
+		panel = <&dsi_nt36672e_fhd_plus_90hz_video &dsi_nt36672e_fhd_plus_120hz_video>;
+	};
+};

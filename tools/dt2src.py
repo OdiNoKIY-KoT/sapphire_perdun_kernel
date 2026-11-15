@@ -172,7 +172,9 @@ def ordered_props(n):
     'compatible' ended up last."""
     items = list(n.props.items())
     names = [k for k, _ in items if k not in ("phandle", "linux,phandle")]
-    if len(names) > 1 and names[-1] == "compatible":
+    if len(names) > 1 and "compatible" in names and \
+            names.index("compatible") >= (len(names) + 1) // 2 and \
+            names[0] != "compatible":
         items.reverse()
     return items
 

@@ -1,0 +1,1918 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Stock dtbo.img entry 37: Qualcomm Technologies, Inc. Khaje IDP
+ * Kernel board overlay part, reconstructed from the stock image
+ * (Qualcomm reference board as built in the Xiaomi sapphire tree).
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	model = "Qualcomm Technologies, Inc. Khaje IDP";
+	compatible = "qcom,khaje-idp", "qcom,khaje", "qcom,idp";
+	qcom,msm-id = <0x232 0x10000>;
+	qcom,board-id = <0x10022 0x0>;
+	qcom,pmic-id = <0x2d 0x2e 0x0 0x0>;
+};
+
+#include <dt-bindings/clock/qcom,gcc-khaje.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+
+&thermal_zones {
+	pm6125-tz {
+		cooling-maps {
+			trip0_cpu0 {
+				trip = <&pm6125_trip0>;
+				cooling-device = <&CPU0 7 7>;
+			};
+
+			trip0_cpu4 {
+				trip = <&pm6125_trip0>;
+				cooling-device = <&CPU4 6 0xffffffff>;
+			};
+
+			trip1_cpu1 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu1_pause 1 1>;
+			};
+
+			trip1_cpu2 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu2_pause 1 1>;
+			};
+
+			trip1_cpu3 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu3_pause 1 1>;
+			};
+
+			trip1_cpu4 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu4_pause 1 1>;
+			};
+
+			trip1_cpu5 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu5_pause 1 1>;
+			};
+
+			trip1_cpu6 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu6_pause 1 1>;
+			};
+
+			trip1_cpu7 {
+				trip = <&pm6125_trip1>;
+				cooling-device = <&cpu7_pause 1 1>;
+			};
+		};
+	};
+};
+
+&soc {
+	fingerprint_xiaomi {
+		compatible = "xiaomi,xiaomi-fp";
+		xiaomi,gpio_irq = <&tlmm 83 0>;
+		vfp-supply = <&pm6125_l9>;
+		netlink-event = <29>;
+		fp-gpio-pwr = <&tlmm 65 0>;
+		pinctrl-names = "reset_high", "reset_low", "eint_default", "eint_pulldown", "pwr_high", "pwr_low";
+		pinctrl-0 = <&fingerprints_reset_high>;
+		pinctrl-1 = <&fingerprints_reset_low>;
+		pinctrl-2 = <&fingerprints_eint_default>;
+		pinctrl-3 = <&fingerprints_eint_pulldown>;
+		pinctrl-4 = <&fingerprints_pwr_high>;
+		pinctrl-5 = <&fingerprints_pwr_low>;
+		status = "okay";
+	};
+};
+
+&tlmm {
+	fingerprints_reset_high: fingerprints_reset_high {
+		mux {
+			pins = "gpio104";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio104";
+			drive-strength = <2>;
+			bias-disable;
+			output-high;
+		};
+	};
+
+	fingerprints_reset_low: fingerprints_reset_low {
+		mux {
+			pins = "gpio104";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio104";
+			drive-strength = <2>;
+			bias-disable;
+			output-low;
+		};
+	};
+
+	fingerprints_eint_default: fingerprints_eint_default {
+		mux {
+			pins = "gpio83";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	fingerprints_eint_pulldown: fingerprints_eint_pulldown {
+		mux {
+			pins = "gpio83";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio83";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+	};
+
+	fingerprints_pwr_high: fingerprints_pwr_high {
+		mux {
+			pins = "gpio65";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio65";
+			drive-strength = <2>;
+			bias-disable;
+			output-high;
+		};
+	};
+
+	fingerprints_pwr_low: fingerprints_pwr_low {
+		mux {
+			pins = "gpio65";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio65";
+			drive-strength = <2>;
+			bias-disable;
+			output-high;
+		};
+	};
+};
+
+&pm6125_vadc {
+	pinctrl-0 = <&camera_therm_default &emmc_therm_default &rf_pa1_therm_default>;
+
+	rf_pa1_therm {
+		reg = <0x55>;
+		label = "rf_pa1_therm";
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+	};
+};
+
+&pm6125_adc_tm {
+	status = "ok";
+
+	rf_pa1_therm {
+		reg = <0x3>;
+		io-channels = <&pm6125_vadc 85>;
+		qcom,ratiometric;
+		qcom,hw-settle-time-us = <200>;
+	};
+};
+
+&thermal_zones {
+	rf-pa1-therm-usr {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-governor = "user_space";
+		thermal-sensors = <&pm6125_adc_tm 3>;
+		wake-capable-sensor;
+
+		trips {
+			active-config0 {
+				temperature = <125000>;
+				hysteresis = <1000>;
+				type = "passive";
+			};
+		};
+	};
+};
+
+&pm6125_gpios {
+	oled_vci {
+		oled_vci_default: oled_vci_default {
+			pins = "gpio9";
+			function = "normal";
+			input-disable;
+			power-source = <0>;
+			bias-disable;
+			output-high;
+			qcom,drive-strength = <2>;
+		};
+
+		oled_vci_suspend: oled_vci_suspend {
+			pins = "gpio9";
+			function = "normal";
+			input-disable;
+			power-source = <0>;
+			bias-disable;
+			output-low;
+			qcom,drive-strength = <2>;
+		};
+	};
+
+	cam_avdd1 {
+		cam_sensor_avdd1_default: cam_sensor_avdd1_default {
+			pins = "gpio2";
+			function = "normal";
+			bias-disable;
+			power-source = <0>;
+			qcom,drive-strength = <2>;
+		};
+
+		cam_sensor_avdd1_suspend: cam_sensor_avdd1_suspend {
+			pins = "gpio2";
+			function = "normal";
+			output-low;
+			bias-disable;
+			power-source = <0>;
+			qcom,drive-strength = <2>;
+		};
+	};
+
+	flash {
+		flash_default: flash_default {
+			pins = "gpio8";
+			function = "normal";
+			output-high;
+			bias-pull-up;
+			power-source = <1>;
+			qcom,drive-strength = <2>;
+		};
+
+		flash_suspend: flash_suspend {
+			pins = "gpio8";
+			function = "normal";
+			output-low;
+			bias-disable;
+			power-source = <1>;
+			qcom,drive-strength = <2>;
+		};
+	};
+
+	rf_pa1_therm {
+		rf_pa1_therm_default: rf_pa1_therm_default {
+			pins = "gpio7";
+			bias-high-impedance;
+		};
+	};
+
+	key_vol_up {
+		key_vol_up_default: key_vol_up_default {
+			pins = "gpio5";
+			function = "normal";
+			input-enable;
+			bias-pull-up;
+			power-source = <0>;
+		};
+	};
+
+	eldo9_pin {
+		usb_eldo9: gpio@c000 {
+			pins = "gpio1";
+			function = "normal";
+			qcom,drive-strength = <2>;
+			power-source = <0>;
+			bias-disable;
+			output-high;
+		};
+	};
+};
+
+&soc {
+	gpio_keys {
+		compatible = "gpio-keys";
+		label = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&key_vol_up_default>;
+
+		vol_up {
+			label = "volume_up";
+			gpios = <&pm6125_gpios 5 1>;
+			linux,input-type = <1>;
+			linux,code = <115>;
+			linux,can-disable;
+			debounce-interval = <15>;
+			gpio-key,wakeup;
+		};
+	};
+
+	ant_check {
+		compatible = "ant_check";
+		interrupt-parent = <&tlmm>;
+		ant_check_gpio = <&tlmm 107 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ant_check_default>;
+	};
+
+	ant_check_div {
+		compatible = "ant_check_div";
+		interrupt-parent = <&tlmm>;
+		ant_check_div_gpio = <&tlmm 25 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ant_check_div_default>;
+	};
+
+	vdda_usb_ss_dp_core: vdda_usb_ss_dp_core {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_supply";
+		regulator-min-microvolt = <880000>;
+		regulator-max-microvolt = <880000>;
+		enable-active-high;
+		gpio = <&pm6125_gpios 1 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&usb_eldo9>;
+	};
+};
+
+&usb_qmp_dp_phy {
+	vdd-supply = <&vdda_usb_ss_dp_core>;
+};
+
+&sdhc_1 {
+	vdd-supply = <&L24A>;
+	qcom,vdd-voltage-level = <2960000 2960000>;
+	qcom,vdd-current-level = <0 570000>;
+	vdd-io-supply = <&L11A>;
+	qcom,vdd-io-always-on;
+	qcom,vdd-io-lpm-sup;
+	qcom,vdd-io-voltage-level = <1800000 1800000>;
+	qcom,vdd-io-current-level = <0 325000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sdc1_on>;
+	pinctrl-1 = <&sdc1_off>;
+	status = "ok";
+};
+
+&sdhc_2 {
+	vdd-supply = <&L22A>;
+	qcom,vdd-voltage-level = <2960000 2960000>;
+	qcom,vdd-current-level = <0 800000>;
+	vdd-io-supply = <&L5A>;
+	qcom,vdd-io-voltage-level = <1800000 2960000>;
+	qcom,vdd-io-current-level = <0 22000>;
+	vdd-io-bias-supply = <&L7A>;
+	qcom,vdd-io-bias-voltage-level = <1256000 1256000>;
+	qcom,vdd-io-bias-current-level = <0 6000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sdc2_on>;
+	pinctrl-1 = <&sdc2_off>;
+	cd-gpios = <&tlmm 88 1>;
+	status = "ok";
+};
+
+&ufsphy_mem {
+	compatible = "qcom,ufs-phy-qmp-v4-khaje";
+	vdda-phy-supply = <&L4A>;
+	vdda-pll-supply = <&L18A>;
+	vdda-phy-max-microamp = <85700>;
+	vdda-pll-max-microamp = <18300>;
+	status = "ok";
+};
+
+&ufshc_mem {
+	vdd-hba-supply = <&gcc_ufs_phy_gdsc>;
+	vdd-hba-fixed-regulator;
+	vcc-supply = <&L24A>;
+	vcc-max-microamp = <800000>;
+	vccq2-supply = <&L11A>;
+	vccq2-max-microamp = <800000>;
+	qcom,vddp-ref-clk-supply = <&L18A>;
+	qcom,vddp-ref-clk-max-microamp = <100>;
+	reset-gpios = <&tlmm 113 1>;
+	resets = <&gcc GCC_UFS_PHY_BCR>;
+	reset-names = "rst";
+	status = "ok";
+};
+
+&pm6125_pwm {
+	status = "ok";
+};
+
+&qupv3_se2_i2c {
+	status = "okay";
+	qcom,i2c-touch-active = "synaptics,tcm-i2c";
+
+	synaptics_tcm@20 {
+		compatible = "synaptics,tcm-i2c";
+		reg = <0x20>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <80 8200>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		synaptics,irq-gpio = <&tlmm 80 8200>;
+		synaptics,irq-on-state = <0>;
+		synaptics,reset-gpio = <&tlmm 86 0>;
+		synaptics,reset-on-state = <0>;
+		synaptics,reset-active-ms = <20>;
+		synaptics,reset-delay-ms = <200>;
+		synaptics,power-delay-ms = <200>;
+		synaptics,ubl-i2c-addr = <0x20>;
+		synaptics,extend_report;
+		synaptics,firmware-name = "synaptics_firmware_k.img";
+	};
+
+	novatek@62 {
+		reg = <0x62>;
+		status = "ok";
+		interrupt-parent = <&tlmm>;
+		interrupts = <80 8200>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		novatek,reset-gpio = <&tlmm 86 0>;
+		novatek,irq-gpio = <&tlmm 80 8200>;
+	};
+};
+
+&spmi_bus {
+	#address-cells = <2>;
+	#size-cells = <0>;
+	interrupt-controller;
+	#interrupt-cells = <4>;
+
+	qcom,pm7250b@2 {
+		compatible = "qcom,spmi-pmic";
+		reg = <0x2 0x0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pm7250b_charger: qcom,qpnp-smb5 {
+			compatible = "qcom,pm7250b-smb5";
+			depends-on-supply = <&pm7250b_vadc>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			#cooling-cells = <2>;
+			qcom,thermal-mitigation = <5950000 5400000 5000000 4500000 4000000 3700000 3500000 3000000
+			                           2800000 2500000 2000000 1500000 1000000 800000 500000 350000
+			                           800000 800000>;
+			qcom,hvdcp2-max-icl-ua = <2000000>;
+			qcom,hvdcp2-12v-max-icl-ua = <1500000>;
+			status = "ok";
+			#io-channel-cells = <1>;
+			io-channels = <&pm7250b_vadc 8 &pm7250b_vadc 7
+			               &pm7250b_vadc 9 &pm7250b_vadc 6
+			               &pm7250b_vadc 79 &pm7250b_vadc 153
+			               &pm7250b_vadc 131 &pm7250b_vadc 77
+			               &pm7250b_qg PSY_IIO_RESISTANCE_ID &pm7250b_qg PSY_IIO_FASTCHARGE_MODE
+			               &pm7250b_qg PSY_IIO_VOLTAGE_NOW &pm7250b_qg PSY_IIO_TEMP
+			               &pm7250b_qg PSY_IIO_CAPACITY &pm7250b_qg PSY_IIO_VOLTAGE_OCV
+			               &pm7250b_qg PSY_IIO_VOLTAGE_AVG &pm7250b_qg PSY_IIO_DEBUG_BATTERY
+			               &pm7250b_qg PSY_IIO_REAL_CAPACITY &pm7250b_qg PSY_IIO_CC_SOC
+			               &pm7250b_qg PSY_IIO_CURRENT_NOW &pm7250b_qg PSY_IIO_VOLTAGE_MAX
+			               &pm7250b_qg PSY_IIO_CHARGE_FULL &pm7250b_qg PSY_IIO_CHARGE_COUNTER
+			               &pm7250b_qg PSY_IIO_CYCLE_COUNT &pm7250b_qg PSY_IIO_CHARGE_FULL_DESIGN
+			               &pm7250b_qg PSY_IIO_TIME_TO_FULL_NOW &pm7250b_qg PSY_IIO_FFC_CHG_TERMINATION_CURRENT
+			               &sc8541_standalone PSY_IIO_SC_BUS_CURRENT &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR
+			               &auth_battery PSY_IIO_AUTH_BATT_ID &auth_battery PSY_IIO_AUTH_AUTHEN_RESULT
+			               &auth_battery PSY_IIO_AUTH_MANUFACTURER &auth_battery PSY_IIO_AUTH_CHIP_OK
+			               &bq25960_standalone PSY_IIO_SC_BUS_CURRENT &bq25960_standalone PSY_IIO_SC_CHIP_VENDOR
+			               &pm7250b_qg PSY_IIO_SOC_DECIMAL &pm7250b_qg PSY_IIO_SOC_DECIMAL_RATE
+			               &pm7250b_qg PSY_IIO_SHUTDOWN_DELAY &pm7250b_qg PSY_IIO_BATT_FULL_CURRENT
+			               &bq25960_standalone PSY_IIO_SET_ACDRV &pm7250b_charger PSY_IIO_RECHARGE_MODE>;
+			io-channel-names = "usb_in_voltage", "usb_in_current", "chg_temp", "die_temp", "conn_temp", "sbux_res", "vph_voltage", "skin_temp", "resistance_id", "fastcharge_mode", "voltage_now", "temp", "capacity", "voltage_ocv", "voltage_avg", "debug_battery", "real_capacity", "cc_soc", "current_now", "voltage_max", "charge_full", "charge_counter", "cycle_count", "charge_full_design", "time_to_full_now", "ffc_chg_termination_current", "sc_bus_current", "sc_manufacturer", "auth_batt_id", "auth_authen_result", "auth_manufacturer", "auth_chip_ok", "bq_bus_current", "bq_manufacturer", "soc_decimal", "soc_decimal_rate", "shutdown_delay", "batt_full_current", "bq_set_acdrv", "recharg_mode";
+			qcom,battery-data = <&mtp_batterydata>;
+			qcom,sec-charger-config = <0>;
+			qcom,auto-recharge-soc = <95>;
+			qcom,auto-recharge-vbat-mv = <100>;
+			qcom,step-charging-enable;
+			qcom,sw-jeita-enable;
+			mi,use_third_cp;
+			mi,support-ffc;
+			qcom,distinguish-qc-class-ab;
+			qcom,charger-temp-max = <800>;
+			qcom,smb-temp-max = <800>;
+			qcom,suspend-input-on-debug-batt;
+			qcom,fcc-stepping-enable;
+			qcom,fcc-step-delay-ms = <100>;
+			qcom,fcc-step-size-ua = <100000>;
+			qcom,smb-internal-pull-kohm = <0>;
+			qcom,en-skin-therm-mitigation;
+			qcom,hvdcp3-standalone-config;
+			qcom,chg-term-current-ma = <0xffffff06>;
+			qcom,fcc-max-ua = <6000000>;
+			qcom,fv-max-uv = <4500000>;
+			qcom,disable-suspend-on-collapse;
+			dpdm-supply = <&usb2_phy0>;
+
+			qcom,chgr@1000 {
+				reg = <0x1000>;
+				interrupts = <2 16 0 1 2 16 1 1
+				              2 16 2 1 2 16 3 1
+				              2 16 4 1 2 16 5 1
+				              2 16 6 1 2 16 7 1>;
+				interrupt-names = "chgr-error", "chg-state-change", "step-chg-state-change", "step-chg-soc-update-fail", "step-chg-soc-update-req", "fg-fvcal-qualified", "vph-alarm", "vph-drop-prechg";
+			};
+
+			qcom,dcdc@1100 {
+				reg = <0x1100>;
+				interrupts = <2 17 0 1 2 17 1 1
+				              2 17 2 1 2 17 3 3
+				              2 17 4 3 2 17 5 3
+				              2 17 6 1 2 17 7 3>;
+				interrupt-names = "otg-fail", "otg-oc-disable-sw", "otg-oc-hiccup", "bsm-active", "high-duty-cycle", "input-current-limiting", "concurrent-mode-disable", "switcher-power-ok";
+			};
+
+			qcom,batif@1200 {
+				reg = <0x1200>;
+				interrupts = <2 18 0 1 2 18 2 3
+				              2 18 3 3 2 18 4 3
+				              2 18 5 3 2 18 6 3
+				              2 18 7 3>;
+				interrupt-names = "bat-temp", "bat-ov", "bat-low", "bat-therm-or-id-missing", "bat-terminal-missing", "buck-oc", "vph-ov";
+			};
+
+			qcom,usb@1300 {
+				reg = <0x1300>;
+				interrupts = <2 19 0 3 2 19 1 3
+				              2 19 2 3 2 19 3 3
+				              2 19 4 3 2 19 5 3
+				              2 19 6 1 2 19 7 1>;
+				interrupt-names = "usbin-collapse", "usbin-vashdn", "usbin-uv", "usbin-ov", "usbin-plugin", "usbin-revi-change", "usbin-src-change", "usbin-icl-change";
+			};
+
+			qcom,dc@1400 {
+				reg = <0x1400>;
+				interrupts = <2 20 1 3 2 20 2 3
+				              2 20 3 3 2 20 4 3
+				              2 20 5 3 2 20 6 1
+				              2 20 7 1>;
+				interrupt-names = "dcin-vashdn", "dcin-uv", "dcin-ov", "dcin-plugin", "dcin-revi", "dcin-pon", "dcin-en";
+			};
+
+			qcom,typec@1500 {
+				reg = <0x1500>;
+				interrupts = <2 21 0 1 2 21 1 1
+				              2 21 2 1 2 21 3 1
+				              2 21 4 1 2 21 5 1
+				              2 21 6 1 2 21 7 1>;
+				interrupt-names = "typec-or-rid-detect-change", "typec-vpd-detect", "typec-cc-state-change", "typec-vconn-oc", "typec-vbus-change", "typec-attach-detach", "typec-legacy-cable-detect", "typec-try-snk-src-detect";
+			};
+
+			qcom,misc@1600 {
+				reg = <0x1600>;
+				interrupts = <2 22 0 1 2 22 1 1
+				              2 22 2 1 2 22 3 1
+				              2 22 4 3 2 22 5 1
+				              2 22 6 1 2 22 7 1>;
+				interrupt-names = "wdog-snarl", "wdog-bark", "aicl-fail", "aicl-done", "smb-en", "imp-trigger", "temp-change", "temp-change-smb";
+			};
+
+			qcom,chg-sdam@b000 {
+				reg = <0xb000>;
+			};
+
+			smb5_vbus: qcom,smb5-vbus {
+				regulator-name = "smb5-vbus";
+			};
+
+			smb5_vconn: qcom,smb5-vconn {
+				regulator-name = "smb5-vconn";
+			};
+		};
+
+		pm7250b_pdphy: qcom,usb-pdphy@1700 {
+			compatible = "qcom,qpnp-pdphy";
+			reg = <0x1700>;
+			interrupts = <2 23 0 1 2 23 1 1
+			              2 23 2 1 2 23 3 1
+			              2 23 4 1 2 23 5 1
+			              2 23 6 1 2 23 7 1>;
+			interrupt-names = "sig-tx", "sig-rx", "msg-tx", "msg-rx", "msg-tx-failed", "msg-tx-discarded", "msg-rx-discarded", "fr-swap";
+			#io-channel-cells = <1>;
+			qcom,default-sink-caps = <5000 3000 9000 3000 12000 2250>;
+			vdd-pdphy-supply = <&L15A>;
+			vbus-supply = <&smb5_vbus>;
+			vconn-supply = <&smb5_vconn>;
+			mi,pd_curr_limit = <1>;
+			mi,pd_max_curr_limit = <4000000>;
+			mi,limit_pd_unverified_pps_vbus = <1>;
+			mi,pd_unverified_pps_max_vbus_limit = <9500000>;
+			io-channels = <&pm7250b_charger PSY_IIO_PD_ACTIVE &pm7250b_charger PSY_IIO_TYPEC_CC_ORIENTATION
+			               &pm7250b_charger PSY_IIO_CONNECTOR_TYPE &pm7250b_charger PSY_IIO_TYPEC_POWER_ROLE
+			               &pm7250b_charger PSY_IIO_PD_USB_SUSPEND_SUPPORTED &pm7250b_charger PSY_IIO_TYPEC_SRC_RP
+			               &pm7250b_charger PSY_IIO_PD_IN_HARD_RESET &pm7250b_charger PSY_IIO_PD_CURRENT_MAX
+			               &pm7250b_charger PSY_IIO_PR_SWAP &pm7250b_charger PSY_IIO_PD_VOLTAGE_MIN
+			               &pm7250b_charger PSY_IIO_PD_VOLTAGE_MAX &pm7250b_charger PSY_IIO_USB_REAL_TYPE
+			               &pm7250b_charger PSY_IIO_TYPEC_MODE &pm7250b_charger PSY_IIO_PE_START>;
+			io-channel-names = "pd_active", "typec_cc_orientation", "connector_type", "typec_power_role", "pd_usb_suspend_supported", "typec_src_rp", "pd_in_hard_reset", "pr_current_max", "pr_swap", "pd_voltage_min", "pd_voltage_max", "real_type", "typec_mode", "pe_start";
+		};
+
+		pm7250b_tz: qcom,temp-alarm@2400 {
+			compatible = "qcom,spmi-temp-alarm";
+			reg = <0x2400>;
+			interrupts = <2 36 0 3>;
+			io-channels = <&pm7250b_vadc 6>;
+			io-channel-names = "thermal";
+			#thermal-sensor-cells = <0>;
+			qcom,temperature-threshold-set = <1>;
+		};
+
+		pm7250b_qg: qpnp,qg {
+			compatible = "qcom,pm7250b-qg";
+			depends-on-supply = <&pm6125_rtc>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			qcom,vbatt-cutoff-mv = <3400>;
+			qcom,vbatt-low-mv = <3500>;
+			qcom,vbatt-low-cold-mv = <3800>;
+			qcom,vbatt-empty-mv = <3000>;
+			qcom,vbatt-empty-cold-mv = <3000>;
+			qcom,s3-entry-fifo-length = <2>;
+			qcom,soc_decimal_rate = <0 32 10 30 20 28 30 28
+			                         40 28 50 28 60 28 70 28
+			                         80 28 90 26 95 10 99 5>;
+			status = "ok";
+			#io-channel-cells = <1>;
+			io-channels = <&pm7250b_vadc 42 &pm7250b_vadc 75
+			               &pm7250b_charger PSY_IIO_INPUT_CURRENT_LIMITED &pm7250b_charger PSY_IIO_RECHARGE_SOC
+			               &pm7250b_charger PSY_IIO_FORCE_RECHARGE &pm7250b_charger PSY_IIO_CHARGE_DONE
+			               &sc8541_standalone PSY_IIO_CHARGING_ENABLED &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+			               &bq25960_standalone PSY_IIO_CHARGING_ENABLED &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+			               &pm7250b_charger PSY_IIO_USB_REAL_TYPE>;
+			io-channel-names = "batt-therm", "batt-id", "input_current_limited", "recharge_soc", "force_recharge", "charge_done", "charging_enabled", "sc_battery_voltage", "bq_charging_enabled", "bq_battery_voltage", "real_type";
+			qcom,battery-data = <&mtp_batterydata>;
+			qcom,qg-iterm-ma = <300>;
+			qcom,hold-soc-while-full;
+			qcom,linearize-soc;
+			qcom,cl-feedback-on;
+			qcom,tcss-enable;
+			qcom,fvss-enable;
+			qcom,fvss-vbatt-mv = <3600>;
+			qcom,bass-enable;
+			qcom,s3-entry-ibat-ua = <25000>;
+			qcom,s3-exit-ibat-ua = <45000>;
+			qcom,qg-ext-sns;
+			qcom,shutdown-delay-enable;
+
+			qcom,qgauge@4800 {
+				status = "okay";
+				reg = <0x4800>;
+				interrupts = <2 72 0 3 2 72 1 3
+				              2 72 2 1 2 72 3 1
+				              2 72 4 1>;
+				interrupt-names = "qg-batt-missing", "qg-vbat-low", "qg-vbat-empty", "qg-fifo-done", "qg-good-ocv";
+			};
+
+			qcom,qg-sdam@b100 {
+				status = "okay";
+				reg = <0xb100>;
+			};
+		};
+
+		pm7250b_clkdiv: clock-controller@5b00 {
+			compatible = "qcom,spmi-clkdiv";
+			reg = <0x5b00>;
+			#clock-cells = <1>;
+			qcom,num-clkdivs = <1>;
+			clock-output-names = "pm7250b_div_clk1";
+			clocks = <&rpmcc RPM_PXO_CLK>;
+			clock-names = "xo";
+			assigned-clocks = <&pm7250b_clkdiv 1>;
+			assigned-clock-rates = <19200000>;
+		};
+
+		pm7250b_gpios: pinctrl@c000 {
+			compatible = "qcom,pm7250b-gpio";
+			reg = <0xc000>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			disp_lcd_bias_en {
+				disp_lcd_bias_en_default: disp_lcd_bias_en_default {
+					pins = "gpio5";
+					function = "func1";
+					input-disable;
+					output-enable;
+					bias-disable;
+					power-source = <0>;
+					qcom,drive-strength = <2>;
+				};
+			};
+
+			pm7250b_smb_int_default: pm7250b_smb_int_default {
+				pins = "gpio6";
+				function = "gpio";
+				input-enable;
+				bias-pull-up;
+				qcom,pull-up-strength = <0>;
+				power-source = <0>;
+			};
+		};
+
+		pm7250b_vadc: vadc@3100 {
+			compatible = "qcom,spmi-adc5";
+			reg = <0x3100>;
+			reg-names = "adc5-usr-base";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <2 49 0 1>;
+			interrupt-names = "eoc-int-en-set";
+			qcom,adc-vdd-reference = <1875>;
+			#io-channel-cells = <1>;
+			io-channel-ranges;
+
+			ref_gnd@0 {
+				reg = <0x0>;
+				label = "ref_gnd";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			vref_1p25@1 {
+				reg = <0x1>;
+				label = "vref_1p25";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			die_temp@2 {
+				reg = <0x6>;
+				label = "die_temp";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			vph_pwr@83 {
+				reg = <0x83>;
+				label = "vph_pwr";
+				qcom,pre-scaling = <1 3>;
+			};
+
+			vbat_sns@84 {
+				reg = <0x84>;
+				label = "vbat_sns";
+				qcom,pre-scaling = <1 3>;
+			};
+
+			usb_in_i_uv@7 {
+				reg = <0x7>;
+				label = "usb_in_i_uv";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			usb_in_v_div_16@8 {
+				reg = <0x8>;
+				label = "usb_in_v_div_16";
+				qcom,pre-scaling = <1 16>;
+			};
+
+			chg_temp@9 {
+				reg = <0x9>;
+				label = "chg_temp";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			bat_therm@4a {
+				reg = <0x4a>;
+				label = "bat_therm";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			bat_therm_30k@2a {
+				reg = <0x2a>;
+				label = "bat_therm_30k";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			bat_therm_400k@6a {
+				reg = <0x6a>;
+				label = "bat_therm_400k";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			bat_id@4b {
+				reg = <0x4b>;
+				label = "bat_id";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			smb1390_therm@e {
+				reg = <0xe>;
+				label = "smb1390_therm";
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			chg_sbux@99 {
+				reg = <0x99>;
+				label = "chg_sbux";
+				qcom,pre-scaling = <1 3>;
+			};
+
+			mid_chg_div6@1e {
+				reg = <0x1e>;
+				label = "chg_mid";
+				qcom,pre-scaling = <1 6>;
+			};
+
+			charger_skin_therm@4d {
+				reg = <0x4d>;
+				label = "charger_skin_therm";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			conn_therm@4f {
+				reg = <0x4f>;
+				label = "conn_therm";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+		};
+
+		pm7250b_adc_tm: adc_tm@3500 {
+			compatible = "qcom,spmi-adc-tm5";
+			reg = <0x3500>;
+			interrupts = <2 53 0 1>;
+			interrupt-names = "pm-adc-tm5";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			#thermal-sensor-cells = <1>;
+			status = "ok";
+
+			charger_skin_therm@4d {
+				reg = <0x0>;
+				io-channels = <&pm7250b_vadc 77>;
+				qcom,ratiometric;
+				qcom,hw-settle-time-us = <200>;
+			};
+
+			conn_therm@4f {
+				reg = <0x1>;
+				io-channels = <&pm7250b_vadc 79>;
+				qcom,ratiometric;
+				qcom,hw-settle-time-us = <200>;
+			};
+		};
+
+		pm7250b_bcl: bcl@1d00 {
+			compatible = "qcom,bcl-v5";
+			reg = <0x1d00>;
+			interrupts = <2 29 0 0 2 29
+			              1 0 2 29 2 0>;
+			interrupt-names = "bcl-lvl0", "bcl-lvl1", "bcl-lvl2";
+			#thermal-sensor-cells = <1>;
+		};
+
+		bcl_soc: bcl-soc {
+			compatible = "qcom,msm-bcl-soc";
+			#thermal-sensor-cells = <0>;
+		};
+	};
+
+	qcom,pm7250b@3 {
+		compatible = "qcom,spmi-pmic";
+		reg = <0x3 0x0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pm7250b_vib: qcom,vibrator@5300 {
+			compatible = "qcom,qpnp-vibrator-ldo";
+			reg = <0x5300>;
+			qcom,vib-ldo-volt-uv = <3000000>;
+			qcom,disable-overdrive;
+		};
+	};
+};
+
+&thermal_zones {
+	pm7250b_temp_alarm: pm7250b-tz {
+		polling-delay-passive = <100>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_tz>;
+
+		trips {
+			pm7250b_trip0: trip0 {
+				temperature = <95000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+
+			pm7250b_trip1: trip1 {
+				temperature = <115000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+
+			trip2 {
+				temperature = <145000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+	};
+
+	pm7250b-ibat-lvl0 {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_bcl 0>;
+
+		trips {
+			ibat_lvl0: ibat-lvl0 {
+				temperature = <5500>;
+				hysteresis = <200>;
+				type = "passive";
+			};
+		};
+	};
+
+	pm7250b-ibat-lvl1 {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_bcl 1>;
+
+		trips {
+			ibat_lvl1: ibat-lvl1 {
+				temperature = <6000>;
+				hysteresis = <200>;
+				type = "passive";
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl0 {
+		polling-delay-passive = <100>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_bcl 5>;
+
+		trips {
+			b_bcl_lvl0: b-bcl-lvl0 {
+				temperature = <1>;
+				hysteresis = <1>;
+				type = "passive";
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl1 {
+		polling-delay-passive = <100>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_bcl 6>;
+
+		trips {
+			b_bcl_lvl1: b-bcl-lvl1 {
+				temperature = <1>;
+				hysteresis = <1>;
+				type = "passive";
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl2 {
+		polling-delay-passive = <100>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm7250b_bcl 7>;
+
+		trips {
+			b_bcl_lvl2: b-bcl-lvl2 {
+				temperature = <1>;
+				hysteresis = <1>;
+				type = "passive";
+			};
+		};
+	};
+
+	socd {
+		polling-delay-passive = <100>;
+		polling-delay = <0>;
+
+		trips {
+			thermal-engine-trip {
+				temperature = <100>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+
+			thermal-hal-trip {
+				temperature = <100>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+
+			soc_trip: soc-trip {
+				temperature = <90>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+	};
+};
+
+&thermal_zones {
+	charger-therm-usr {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-governor = "user_space";
+		thermal-sensors = <&pm7250b_adc_tm 0>;
+		wake-capable-sensor;
+
+		trips {
+			active-config0 {
+				temperature = <125000>;
+				hysteresis = <1000>;
+				type = "passive";
+			};
+		};
+	};
+
+	conn-therm-usr {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-governor = "user_space";
+		thermal-sensors = <&pm7250b_adc_tm 1>;
+		wake-capable-sensor;
+
+		trips {
+			active-config0 {
+				temperature = <125000>;
+				hysteresis = <1000>;
+				type = "passive";
+			};
+		};
+	};
+};
+
+&thermal_zones {
+	pm7250b-tz {
+		cooling-maps {
+			trip0_bat {
+				trip = <&pm7250b_trip0>;
+				cooling-device = <&pm7250b_charger 9 9>;
+			};
+
+			trip1_bat {
+				trip = <&pm7250b_trip1>;
+				cooling-device = <&pm7250b_charger 10 10>;
+			};
+		};
+	};
+
+	socd {
+		cooling-maps {
+			soc_cpu4 {
+				trip = <&soc_trip>;
+				cooling-device = <&cpu4_pause 1 1>;
+			};
+
+			soc_cpu5 {
+				trip = <&soc_trip>;
+				cooling-device = <&cpu5_pause 1 1>;
+			};
+
+			soc_cpu6 {
+				trip = <&soc_trip>;
+				cooling-device = <&cpu6_pause 1 1>;
+			};
+
+			soc_cpu7 {
+				trip = <&soc_trip>;
+				cooling-device = <&cpu7_pause 1 1>;
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl0 {
+		cooling-maps {
+			lbat0_cpufreq4 {
+				trip = <&b_bcl_lvl0>;
+				cooling-device = <&CPU4 2 2>;
+			};
+
+			lbat0_cpu6 {
+				trip = <&b_bcl_lvl0>;
+				cooling-device = <&cpu6_pause 1 1>;
+			};
+
+			lbat0_cpu7 {
+				trip = <&b_bcl_lvl0>;
+				cooling-device = <&cpu7_pause 1 1>;
+			};
+
+			lbat0_gpu {
+				trip = <&b_bcl_lvl0>;
+				cooling-device = <&msm_gpu 2 2>;
+			};
+
+			lbat0_cdsp {
+				trip = <&b_bcl_lvl0>;
+				cooling-device = <&cdsp_sw 2 2>;
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl1 {
+		cooling-maps {
+			lbat1_cpu4 {
+				trip = <&b_bcl_lvl1>;
+				cooling-device = <&cpu4_pause 1 1>;
+			};
+
+			lbat1_cpu5 {
+				trip = <&b_bcl_lvl1>;
+				cooling-device = <&cpu5_pause 1 1>;
+			};
+
+			lbat1_gpu {
+				trip = <&b_bcl_lvl1>;
+				cooling-device = <&msm_gpu 4 4>;
+			};
+
+			lbat1_cdsp {
+				trip = <&b_bcl_lvl1>;
+				cooling-device = <&cdsp_sw 4 4>;
+			};
+		};
+	};
+
+	pm7250b-bcl-lvl2 {
+		cooling-maps {
+			lbat2_gpu {
+				trip = <&b_bcl_lvl2>;
+				cooling-device = <&msm_gpu 4 0xffffffff>;
+			};
+
+			lbat2_cdsp {
+				trip = <&b_bcl_lvl2>;
+				cooling-device = <&cdsp_sw 4 4>;
+			};
+		};
+	};
+};
+
+&soc {
+	onewire_gpio: onewire_gpio {
+		compatible = "xiaomi,onewire_gpio";
+		label = "xm_onewire";
+		xiaomi,version = <1>;
+		onewire-gpio = <&tlmm 66 0>;
+		xiaomi,gpio_number = <66>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&onewire_gpio_active>;
+		pinctrl-1 = <&onewire_gpio_sleep>;
+		status = "ok";
+	};
+
+	maxim_ds28e30: maxim_ds28e30 {
+		#io-channel-cells = <1>;
+		compatible = "maxim,ds28e30";
+		label = "max_ds28e30";
+		maxim,version = <1>;
+		status = "ok";
+	};
+
+	acl_slg: acl_slg {
+		compatible = "acl,slg";
+		status = "okay";
+		def-supply = <&maxim_ds28e30>;
+	};
+
+	st_stick: st_stick {
+		compatible = "st,stick";
+		status = "okay";
+		def-supply = <&maxim_ds28e30 &acl_slg>;
+	};
+
+	auth_battery: auth_battery {
+		compatible = "lc,auth-battery";
+		status = "okay";
+		#io-channel-cells = <1>;
+		def-supply = <&maxim_ds28e30 &acl_slg &st_stick>;
+	};
+};
+
+&tlmm {
+	onewire_gpio_active: onewire_gpio_active {
+		mux {
+			pins = "gpio66";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio66";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+	};
+
+	onewire_gpio_sleep: onewire_gpio_sleep {
+		mux {
+			pins = "gpio66";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio66";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+	};
+};
+
+&soc {
+	xm_smart_chg: xm_smart_chg {
+		compatible = "xiaomi,xm_smart_chg";
+		status = "ok";
+		label = "smart_charging";
+		xiaomi,pd-thermal-mitigation = <5950000 5400000 5000000 4500000 4000000 3700000 3500000 3000000
+		                                2800000 2500000 2000000 1500000 1000000 800000 500000 350000
+		                                800000 800000>;
+		xiaomi,pd-thermal-mitigation-fast = <6000000 5950000 5950000 5400000 5000000 4500000 4000000 3700000
+		                                     2800000 2500000 2000000 1500000 1000000 800000 500000 350000
+		                                     800000 800000>;
+		io-channels = <&pm7250b_qg PSY_IIO_CAPACITY &pm7250b_charger PSY_IIO_PD_ACTIVE
+		               &pm7250b_qg PSY_IIO_CAPACITY_RAW>;
+		io-channel-names = "capacity", "pd_active", "capacity_raw";
+	};
+};
+
+&soc {
+	mtp_batterydata: qcom,battery-data {
+		qcom,batt-id-range-pct = <15>;
+
+		qcom,qbg-battery-profile-guanyu-5000mAh {
+			qcom,max-voltage-uv = <4500000>;
+			qcom,fg-cc-cv-threshold-uv = <4500000>;
+			qcom,fastchg-current-ma = <6000>;
+			qcom,batt-id-kohm = <100>;
+			qcom,battery-beta = <3380>;
+			qcom,battery-therm-kohm = <10>;
+			qcom,battery-type = "qbg-battery-profile-guanyu-5000mAh-new";
+			qcom,qg-batt-profile-ver = <100>;
+			qcom,jeita-fcc-ranges = <0xffffff9c 0 400000 0 50 850000 50 100
+			                         2300000 100 150 3700000 150 350 6000000 350
+			                         480 6000000 480 560 2300000 560 1500 0>;
+			qcom,jeita-fv-ranges = <0xffffff9c 0 4460000 0 50 4480000 50 100
+			                        4480000 100 150 4480000 150 350 4450000 350
+			                        480 4450000 480 560 4100000 560 1500 4100000>;
+			qcom,step-chg-ranges = <3600000 4250000 6000000 4250001 4480000 5400000 4480001 4500000
+			                        3920000>;
+			qcom,vbat-avg-based-step-chg;
+			qcom,taper-fcc;
+			qcom,jeita-soft-thresholds = <9556 3725>;
+			qcom,jeita-hard-thresholds = <17365 2971>;
+			qcom,jeita-soft-hys-thresholds = <8799 4060>;
+			qcom,jeita-soft-fcc-ua = <5400000 2500000>;
+			qcom,jeita-soft-fv-uv = <4480000 4100000>;
+
+			qcom,fcc1-temp-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-data = [00 00 13 cd 00 00 14 01 00 00 14 6c 00 00 14 91 00 00 14 9a];
+			};
+
+			qcom,fcc2-temp-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-data = [00 00 13 f2 00 00 14 1c 00 00 14 1c 00 00 14 80 00 00 14 7c 00 00 14 73];
+			};
+
+			qcom,pc-temp-v1-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 af 01 00 00 af 5c 00 00 af 99 00 00 af b8 00 00 af c0 00 00 ad b1 00 00 ad ce 00 00 ad ed 00 00 ae 01 00 00 ae 12 00 00 ac b4 00 00 ac c2 00 00 ac c4 00 00 ac bb 00 00 ac c3 00 00 ab cb 00 00 ab ea 00 00 ab d5 00 00 ab c2 00 00 ab c3 00 00 aa e4 00 00 ab 0c 00 00 aa fb 00 00 aa e5 00 00 aa e4 00 00 aa 03 00 00 aa 28 00 00 aa 19 00 00 aa 05 00 00 aa 06 00 00 a9 15 00 00 a9 40 00 00 a9 30 00 00 a9 19 00 00 a9 1c 00 00 a8 19 00 00 a8 4b 00 00 a8 40 00 00 a8 28 00 00 a8 2c 00 00 a7 19 00 00 a7 4e 00 00 a7 44 00 00 a7 2e 00 00 a7 35 00 00 a6 1a 00 00 a6 50 00 00 a6 41 00 00 a6 2e 00 00 a6 38 00 00 a5 1a 00 00 a5 50 00 00 a5 3e 00 00 a5 2e 00 00 a5 3a 00 00 a4 1f 00 00 a4 51 00 00 a4 39 00 00 a4 2e 00 00 a4 38 00 00 a3 27 00 00 a3 56 00 00 a3 3b 00 00 a3 31 00 00 a3 38 00 00 a2 35 00 00 a2 5e 00 00 a2 43 00 00 a2 37 00 00 a2 41 00 00 a1 4c 00 00 a1 71 00 00 a1 52 00 00 a1 43 00 00 a1 51 00 00 a0 6a 00 00 a0 8c 00 00 a0 67 00 00 a0 58 00 00 a0 66 00 00 9f 90 00 00 9f ae 00 00 9f 83 00 00 9f 75 00 00 9f 7f 00 00 9e bd 00 00 9e d9 00 00 9e ab 00 00 9e 9c 00 00 9e a2 00 00 9d f4 00 00 9e 0d 00 00 9d df 00 00 9d cc 00 00 9d d0 00 00 9d 38 00 00 9d 4d 00 00 9d 1a 00 00 9d 03 00 00 9d 05 00 00 9c 82 00 00 9c 96 00 00 9c 68 00 00 9c 4c 00 00 9c 4b 00 00 9b ca 00 00 9b d8 00 00 9b b3 00 00 9b 9b 00 00 9b 9a 00 00 9b 15 00 00 9b 15 00 00 9a c4 00 00 9a bf 00 00 9a ca 00 00 9a 4b 00 00 9a 45 00 00 99 9f 00 00 99 a2 00 00 99 c4 00 00 99 3f 00 00 99 43 00 00 98 ba 00 00 98 b7 00 00 98 dd 00 00 98 3a 00 00 98 2d 00 00 98 10 00 00 98 1f 00 00 98 3c 00 00 97 9b 00 00 97 88 00 00 97 88 00 00 97 a3 00 00 97 b4 00 00 97 2a 00 00 97 2c 00 00 97 22 00 00 97 30 00 00 97 34 00 00 96 d1 00 00 96 dd 00 00 96 cd 00 00 96 ca 00 00 96 bf 00 00 96 8a 00 00 96 8b 00 00 96 7b 00 00 96 67 00 00 96 54 00 00 96 4d 00 00 96 3d 00 00 96 2b 00 00 96 07 00 00 95 f5 00 00 96 10 00 00 95 f0 00 00 95 df 00 00 95 af 00 00 95 9e 00 00 95 d7 00 00 95 a3 00 00 95 94 00 00 95 64 00 00 95 50 00 00 95 9f 00 00 95 60 00 00 95 4f 00 00 95 20 00 00 95 08 00 00 95 69 00 00 95 28 00 00 95 14 00 00 94 e0 00 00 94 c5 00 00 95 38 00 00 94 f7 00 00 94 e1 00 00 94 a4 00 00 94 8a 00 00 95 0f 00 00 94 ce 00 00 94 b2 00 00 94 69 00 00 94 48 00 00 94 ec 00 00 94 ab 00 00 94 89 00 00 94 35 00 00 93 fe 00 00 94 bd 00 00 94 7e 00 00 94 58 00 00 93 f8 00 00 93 ac 00 00 94 7c 00 00 94 38 00 00 94 05 00 00 93 a1 00 00 93 54 00 00 94 2a 00 00 93 e0 00 00 93 96 00 00 93 32 00 00 92 f3 00 00 93 bb 00 00 93 78 00 00 93 1f 00 00 92 b9 00 00 92 82 00 00 93 2d 00 00 92 f8 00 00 92 9a 00 00 92 32 00 00 91 f9 00 00 92 8c 00 00 92 58 00 00 91 f8 00 00 91 95 00 00 91 5a 00 00 91 df 00 00 91 a5 00 00 91 55 00 00 90 f9 00 00 90 be 00 00 91 38 00 00 91 02 00 00 90 e8 00 00 90 99 00 00 90 65 00 00 90 fe 00 00 90 c6 00 00 90 cc 00 00 90 83 00 00 90 4e 00 00 90 bf 00 00 90 a2 00 00 90 b6 00 00 90 73 00 00 90 3f 00 00 90 7f 00 00 90 73 00 00 90 a0 00 00 90 59 00 00 90 27 00 00 90 24 00 00 90 39 00 00 90 65 00 00 8f f6 00 00 8f b8 00 00 8e f4 00 00 8f a5 00 00 8f 6c 00 00 8e bd 00 00 8e 73 00 00 7f a0 00 00 8e 09 00 00 8d a3 00 00 8c da 00 00 8c 8c 00 00 7c 55 00 00 7e 1a 00 00 8b 33 00 00 8a 65 00 00 8a 12 00 00 79 f7 00 00 79 7d 00 00 87 ba 00 00 86 f9 00 00 86 9e 00 00 77 54 00 00 76 98 00 00 81 ea 00 00 81 67 00 00 81 0d 00 00 75 30 00 00 75 30 00 00 75 30 00 00 75 30 00 00 75 30];
+			};
+
+			qcom,pc-temp-v2-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 af cd 00 00 af be 00 00 af aa 00 00 af 6e 00 00 af 5a 00 00 af 46 00 00 ad d1 00 00 ad ee 00 00 ad ee 00 00 ad da 00 00 ad b6 00 00 ad a2 00 00 ac 2e 00 00 ac 6f 00 00 ac 7f 00 00 ac 83 00 00 ac 51 00 00 ac 3b 00 00 aa ff 00 00 ab 59 00 00 ab 72 00 00 ab 78 00 00 ab 3c 00 00 ab 23 00 00 aa 20 00 00 aa 8e 00 00 aa a9 00 00 aa a3 00 00 aa 5d 00 00 aa 42 00 00 a9 49 00 00 a9 c4 00 00 a9 dd 00 00 a9 c6 00 00 a9 7b 00 00 a9 5f 00 00 a8 5f 00 00 a8 e0 00 00 a8 f9 00 00 a8 d8 00 00 a8 8d 00 00 a8 71 00 00 a7 73 00 00 a7 f4 00 00 a8 0d 00 00 a7 e5 00 00 a7 9b 00 00 a7 7f 00 00 a6 81 00 00 a7 02 00 00 a7 19 00 00 a6 ea 00 00 a6 a1 00 00 a6 85 00 00 a5 87 00 00 a6 08 00 00 a6 1b 00 00 a5 e9 00 00 a5 a1 00 00 a5 86 00 00 a4 8e 00 00 a5 0f 00 00 a5 1d 00 00 a4 e9 00 00 a4 a2 00 00 a4 87 00 00 a3 95 00 00 a4 16 00 00 a4 20 00 00 a3 e6 00 00 a3 a3 00 00 a3 89 00 00 a2 9f 00 00 a3 1e 00 00 a3 26 00 00 a2 e8 00 00 a2 a7 00 00 a2 8f 00 00 a1 ba 00 00 a2 2c 00 00 a2 31 00 00 a1 ee 00 00 a1 b0 00 00 a1 9c 00 00 a0 e2 00 00 a1 3e 00 00 a1 42 00 00 a0 f9 00 00 a0 bf 00 00 a0 ae 00 00 a0 05 00 00 a0 5a 00 00 a0 59 00 00 a0 0d 00 00 9f d7 00 00 9f c6 00 00 9f 20 00 00 9f 86 00 00 9f 74 00 00 9f 28 00 00 9e f5 00 00 9e e5 00 00 9e 31 00 00 9e b7 00 00 9e 98 00 00 9e 4d 00 00 9e 1d 00 00 9e 0d 00 00 9d 2e 00 00 9d e5 00 00 9d cc 00 00 9d 7d 00 00 9d 4f 00 00 9d 3e 00 00 9c 18 00 00 9d 10 00 00 9d 03 00 00 9c ad 00 00 9c 86 00 00 9c 77 00 00 9b 12 00 00 9c 26 00 00 9c 1d 00 00 9b de 00 00 9b c9 00 00 9b bf 00 00 9a 21 00 00 9b 0b 00 00 9b 15 00 00 9b 0c 00 00 9b 0b 00 00 9b 0b 00 00 99 3f 00 00 99 f2 00 00 9a 19 00 00 9a 1f 00 00 9a 27 00 00 9a 2e 00 00 98 65 00 00 99 14 00 00 99 2e 00 00 99 14 00 00 99 14 00 00 99 1b 00 00 97 96 00 00 98 52 00 00 98 59 00 00 98 36 00 00 98 35 00 00 98 37 00 00 96 e6 00 00 97 a8 00 00 97 ac 00 00 97 8f 00 00 97 94 00 00 97 97 00 00 96 50 00 00 97 12 00 00 97 1c 00 00 97 02 00 00 97 0d 00 00 97 10 00 00 95 d1 00 00 96 89 00 00 96 99 00 00 96 84 00 00 96 93 00 00 96 97 00 00 95 6d 00 00 96 0a 00 00 96 21 00 00 96 16 00 00 96 25 00 00 96 2a 00 00 95 19 00 00 95 96 00 00 95 b3 00 00 95 af 00 00 95 c0 00 00 95 c5 00 00 94 ce 00 00 95 2b 00 00 95 4e 00 00 95 4e 00 00 95 65 00 00 95 67 00 00 94 8a 00 00 94 c5 00 00 94 f0 00 00 94 f6 00 00 95 12 00 00 95 11 00 00 94 4b 00 00 94 6d 00 00 94 9a 00 00 94 a7 00 00 94 c9 00 00 94 c8 00 00 94 0d 00 00 94 2c 00 00 94 4a 00 00 94 5e 00 00 94 84 00 00 94 83 00 00 93 d1 00 00 93 f8 00 00 94 01 00 00 94 19 00 00 94 37 00 00 94 33 00 00 93 90 00 00 93 c6 00 00 93 c1 00 00 93 d8 00 00 93 e6 00 00 93 d7 00 00 93 4a 00 00 93 97 00 00 93 85 00 00 93 90 00 00 93 8c 00 00 93 73 00 00 92 ff 00 00 93 65 00 00 93 45 00 00 93 3d 00 00 93 21 00 00 92 fc 00 00 92 ac 00 00 93 26 00 00 92 ff 00 00 92 e5 00 00 92 b7 00 00 92 86 00 00 92 51 00 00 92 dc 00 00 92 af 00 00 92 8c 00 00 92 5e 00 00 92 29 00 00 91 ec 00 00 92 7c 00 00 92 49 00 00 92 2c 00 00 92 08 00 00 91 d2 00 00 91 7a 00 00 91 f8 00 00 91 d1 00 00 91 be 00 00 91 9f 00 00 91 65 00 00 91 00 00 00 91 66 00 00 91 42 00 00 91 3d 00 00 91 25 00 00 90 e9 00 00 90 81 00 00 90 c7 00 00 90 9d 00 00 90 a6 00 00 90 99 00 00 90 5f 00 00 90 15 00 00 90 33 00 00 90 12 00 00 90 18 00 00 90 10 00 00 8f df 00 00 8f ac 00 00 8f c1 00 00 8f c5 00 00 8f eb 00 00 8f f6 00 00 8f c2 00 00 8f 79 00 00 8f 8e 00 00 8f 9e 00 00 8f d1 00 00 8f e2 00 00 8f b0 00 00 8f 42 00 00 8f 5f 00 00 8f 6b 00 00 8f a7 00 00 8f c5 00 00 8f 96 00 00 8f 34 00 00 8f 2b 00 00 8f 26 00 00 8f 58 00 00 8f 8b 00 00 8f 58 00 00 8e da 00 00 8e ed 00 00 8e 68 00 00 8e 80 00 00 8e c2 00 00 8e 90 00 00 8e 38 00 00 8e 84 00 00 8c e0 00 00 8c b1 00 00 8d 10 00 00 8c d2 00 00 8d c1 00 00 8d aa 00 00 8a 8f 00 00 8a 1b 00 00 8a c1 00 00 8a 94 00 00 8a 4f 00 00 8d b4 00 00 87 81 00 00 86 4e 00 00 87 af 00 00 87 94 00 00 7a 6a 00 00 8b ff 00 00 84 a3 00 00 82 18 00 00 83 05 00 00 83 2b 00 00 76 38 00 00 77 c9 00 00 7e f6 00 00 80 25 00 00 7b f3 00 00 7b a8 00 00 72 44 00 00 72 8c 00 00 6d d8 00 00 71 8c 00 00 6b dd 00 00 6b 8b];
+			};
+
+			qcom,pc-temp-z1-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 2c b1 00 00 2a e9 00 00 29 99 00 00 28 f4 00 00 28 a9 00 00 2c de 00 00 2b 24 00 00 29 d4 00 00 29 26 00 00 28 ef 00 00 2c df 00 00 2b 22 00 00 29 d7 00 00 29 28 00 00 28 f0 00 00 2c e0 00 00 2b 2c 00 00 29 d2 00 00 29 20 00 00 28 eb 00 00 2c e9 00 00 2b 33 00 00 29 d3 00 00 29 1e 00 00 28 eb 00 00 2c fc 00 00 2b 37 00 00 29 d3 00 00 29 1e 00 00 28 eb 00 00 2d 00 00 00 2b 3a 00 00 29 d0 00 00 29 1e 00 00 28 eb 00 00 2c ed 00 00 2b 38 00 00 29 cc 00 00 29 1e 00 00 28 ec 00 00 2c d9 00 00 2b 32 00 00 29 c7 00 00 29 1d 00 00 28 ec 00 00 2c d1 00 00 2b 2d 00 00 29 c3 00 00 29 1a 00 00 28 ed 00 00 2c cb 00 00 2b 26 00 00 29 c3 00 00 29 19 00 00 28 ed 00 00 2c c6 00 00 2b 21 00 00 29 c3 00 00 29 19 00 00 28 ed 00 00 2c c2 00 00 2b 1e 00 00 29 c4 00 00 29 1a 00 00 28 ee 00 00 2c c0 00 00 2b 1c 00 00 29 c4 00 00 29 1a 00 00 28 ee 00 00 2c ca 00 00 2b 1c 00 00 29 c4 00 00 29 1b 00 00 28 f1 00 00 2c dd 00 00 2b 1e 00 00 29 c6 00 00 29 1d 00 00 28 f3 00 00 2c de 00 00 2b 1f 00 00 29 cb 00 00 29 1f 00 00 28 f5 00 00 2c d2 00 00 2b 1d 00 00 29 d0 00 00 29 22 00 00 28 f7 00 00 2c cb 00 00 2b 1b 00 00 29 d6 00 00 29 24 00 00 28 f9 00 00 2c cc 00 00 2b 1d 00 00 29 d9 00 00 29 27 00 00 28 fc 00 00 2c d0 00 00 2b 26 00 00 29 d9 00 00 29 2a 00 00 28 ff 00 00 2c d4 00 00 2b 2d 00 00 29 d9 00 00 29 2d 00 00 29 03 00 00 2c d9 00 00 2b 33 00 00 29 d9 00 00 29 2f 00 00 29 04 00 00 2c db 00 00 2b 37 00 00 29 dc 00 00 29 30 00 00 29 04 00 00 2c d7 00 00 2b 37 00 00 29 df 00 00 29 31 00 00 29 05 00 00 2c d1 00 00 2b 36 00 00 29 e4 00 00 29 34 00 00 29 06 00 00 2c d5 00 00 2b 36 00 00 29 e8 00 00 29 39 00 00 29 09 00 00 2c e5 00 00 2b 3c 00 00 29 eb 00 00 29 3c 00 00 29 0c 00 00 2c ec 00 00 2b 40 00 00 29 ef 00 00 29 3f 00 00 29 10 00 00 2c e7 00 00 2b 40 00 00 29 f2 00 00 29 42 00 00 29 13 00 00 2c e1 00 00 2b 3e 00 00 29 f5 00 00 29 45 00 00 29 16 00 00 2c e2 00 00 2b 3f 00 00 29 f9 00 00 29 48 00 00 29 19 00 00 2c e7 00 00 2b 47 00 00 2a 01 00 00 29 4d 00 00 29 1b 00 00 2c e8 00 00 2b 4b 00 00 2a 07 00 00 29 52 00 00 29 1d 00 00 2c df 00 00 2b 4a 00 00 2a 08 00 00 29 53 00 00 29 20 00 00 2c d6 00 00 2b 48 00 00 2a 07 00 00 29 53 00 00 29 23 00 00 2c df 00 00 2b 48 00 00 2a 07 00 00 29 53 00 00 29 26 00 00 2c f7 00 00 2b 49 00 00 2a 0b 00 00 29 58 00 00 29 27 00 00 2c ff 00 00 2b 4b 00 00 2a 11 00 00 29 5d 00 00 29 28 00 00 2c f7 00 00 2b 4b 00 00 2a 19 00 00 29 60 00 00 29 2a 00 00 2c f1 00 00 2b 4c 00 00 2a 23 00 00 29 62 00 00 29 2c 00 00 2c f9 00 00 2b 51 00 00 2a 26 00 00 29 65 00 00 29 2e 00 00 2d 05 00 00 2b 5b 00 00 2a 27 00 00 29 6a 00 00 29 30 00 00 2d 06 00 00 2b 6b 00 00 2a 2b 00 00 29 6c 00 00 29 33 00 00 2d 06 00 00 2b 70 00 00 2a 30 00 00 29 6d 00 00 29 35 00 00 2d 15 00 00 2b 65 00 00 2a 33 00 00 29 71 00 00 29 38 00 00 2d 28 00 00 2b 69 00 00 2a 37 00 00 29 72 00 00 29 39 00 00 2d 04 00 00 2b 59 00 00 2a 35 00 00 29 74 00 00 29 39 00 00 2d 04 00 00 2b 5e 00 00 2a 35 00 00 29 77 00 00 29 3a 00 00 2c fd 00 00 2b 5f 00 00 2a 3e 00 00 29 7a 00 00 29 3d 00 00 2c fc 00 00 2b 62 00 00 2a 3e 00 00 29 7d 00 00 29 41 00 00 2d 08 00 00 2b 5b 00 00 2a 49 00 00 29 81 00 00 29 47 00 00 2d 0e 00 00 2b 57 00 00 2a 57 00 00 29 8d 00 00 29 4e 00 00 2d 0e 00 00 2b 60 00 00 2a 69 00 00 29 9a 00 00 29 59 00 00 2d 0e 00 00 2b 60 00 00 2a 69 00 00 29 9a 00 00 29 59 00 00 2d 0e 00 00 2b 60 00 00 2a 69 00 00 29 9a 00 00 29 59];
+			};
+
+			qcom,pc-temp-z2-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 26 54 00 00 29 b4 00 00 2a 70 00 00 2a 32 00 00 2a 31 00 00 29 32 00 00 2a 2e 00 00 2a a7 00 00 2b 73 00 00 2a 5a 00 00 29 45 00 00 2a 34 00 00 2a cf 00 00 2b e0 00 00 2a d6 00 00 29 56 00 00 29 f0 00 00 2a 81 00 00 2b 4a 00 00 2c 09 00 00 29 44 00 00 29 b4 00 00 2a 44 00 00 2b 09 00 00 2b c7 00 00 29 11 00 00 29 7f 00 00 2a 08 00 00 2a f5 00 00 2b 95 00 00 28 e6 00 00 29 53 00 00 29 c3 00 00 2a f4 00 00 2b a3 00 00 28 c1 00 00 29 2e 00 00 29 a1 00 00 2a f4 00 00 2b b8 00 00 28 a4 00 00 29 12 00 00 29 b0 00 00 2a f9 00 00 2b b3 00 00 28 93 00 00 29 12 00 00 29 ca 00 00 2b 0a 00 00 2b 96 00 00 28 86 00 00 29 33 00 00 29 db 00 00 2b 18 00 00 2b 8e 00 00 28 87 00 00 29 53 00 00 29 e7 00 00 2b 20 00 00 2b dd 00 00 28 a3 00 00 29 65 00 00 29 f8 00 00 2b 2b 00 00 2c 26 00 00 28 bf 00 00 29 74 00 00 2a 19 00 00 2b 52 00 00 2b da 00 00 28 cf 00 00 29 8a 00 00 2a 3b 00 00 2b 82 00 00 2b 44 00 00 28 dd 00 00 29 a5 00 00 2a 51 00 00 2b 6c 00 00 2b 2d 00 00 28 ec 00 00 29 c0 00 00 2a 64 00 00 2a f8 00 00 2b 64 00 00 28 fc 00 00 29 d9 00 00 2a 84 00 00 2a c7 00 00 2b b4 00 00 29 0e 00 00 29 f0 00 00 2a bc 00 00 2b 12 00 00 2c 59 00 00 29 28 00 00 2a 05 00 00 2a e8 00 00 2b 78 00 00 2c f2 00 00 29 3f 00 00 2a 19 00 00 2a f7 00 00 2b b8 00 00 2d 0a 00 00 29 41 00 00 2a 1e 00 00 2b 06 00 00 2b f2 00 00 2d 12 00 00 29 3d 00 00 2a 12 00 00 2b 3f 00 00 2c 58 00 00 2d 20 00 00 29 3b 00 00 2a 08 00 00 2b b8 00 00 2d 19 00 00 2d 38 00 00 29 3e 00 00 2a 0a 00 00 2b dd 00 00 2d 78 00 00 2d 5a 00 00 29 43 00 00 2a 10 00 00 2b 7b 00 00 2c f8 00 00 2d b7 00 00 29 42 00 00 2a 10 00 00 2b 0c 00 00 2c 5d 00 00 2e 19 00 00 29 3f 00 00 29 ff 00 00 2a d4 00 00 2c 6f 00 00 2e 16 00 00 29 3e 00 00 29 f2 00 00 2a ad 00 00 2c be 00 00 2d d7 00 00 29 46 00 00 2a 08 00 00 2a cd 00 00 2c cd 00 00 2d 76 00 00 29 50 00 00 2a 2c 00 00 2b 99 00 00 2c 63 00 00 2c 98 00 00 29 50 00 00 2a 35 00 00 2c 0a 00 00 2b ed 00 00 2b cd 00 00 29 4f 00 00 2a 36 00 00 2b 9e 00 00 2b 9d 00 00 2b 71 00 00 29 4f 00 00 2a 37 00 00 2b 1d 00 00 2b 62 00 00 2b 35 00 00 29 57 00 00 2a 2c 00 00 2b 12 00 00 2b 88 00 00 2b 4a 00 00 29 60 00 00 2a 1e 00 00 2b 12 00 00 2c 49 00 00 2b f1 00 00 29 60 00 00 2a 1e 00 00 2b 16 00 00 2c f6 00 00 2c d0 00 00 29 60 00 00 2a 26 00 00 2b 4b 00 00 2d 89 00 00 2e 50 00 00 29 60 00 00 2a 2f 00 00 2b 87 00 00 2d e1 00 00 2f 7d 00 00 29 63 00 00 2a 35 00 00 2b b1 00 00 2d d9 00 00 2f 71 00 00 29 67 00 00 2a 3d 00 00 2b d1 00 00 2d be 00 00 2f 23 00 00 29 6b 00 00 2a 47 00 00 2b c4 00 00 2d a0 00 00 2e 9c 00 00 29 70 00 00 2a 54 00 00 2b 84 00 00 2d 76 00 00 2d 92 00 00 29 9e 00 00 2a 62 00 00 2b 76 00 00 2c b2 00 00 2d 43 00 00 29 a3 00 00 2a c2 00 00 2b 7e 00 00 2b c0 00 00 2d 27 00 00 29 38 00 00 2b 67 00 00 2b c6 00 00 2c 0a 00 00 2c e1 00 00 26 a1 00 00 2b 4f 00 00 2b ac 00 00 2b fb 00 00 2d 08 00 00 26 57 00 00 2b 19 00 00 2b 71 00 00 2c 12 00 00 2d 05 00 00 26 07 00 00 2a e5 00 00 2b 48 00 00 2c 45 00 00 2d d6 00 00 27 49 00 00 2a 95 00 00 2b 39 00 00 2d 01 00 00 2d b0 00 00 2d 92 00 00 2a 3c 00 00 2b fd 00 00 2b a9 00 00 2b 5c 00 00 ff ff 00 00 29 d4 00 00 2b 90 00 00 2a 63 00 00 2a 5a 00 00 ff ff 00 00 ff ff 00 00 29 fb 00 00 29 f1 00 00 2a 61 00 00 25 eb 00 00 29 e0 00 00 29 67 00 00 29 74 00 00 2a 2f 00 00 25 eb 00 00 29 e0 00 00 29 67 00 00 29 74 00 00 2a 2f 00 00 25 eb 00 00 29 e0 00 00 29 67 00 00 29 74 00 00 2a 2f];
+			};
+
+			qcom,pc-temp-z3-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 4b 3f 00 00 4b 9a 00 00 4b 91 00 00 4b 79 00 00 4b 76 00 00 4c 76 00 00 4c 40 00 00 4b d6 00 00 4b 9e 00 00 4b 7f 00 00 4c b9 00 00 4c 64 00 00 4b f8 00 00 4b 9a 00 00 4b 7f 00 00 4c de 00 00 4c 6c 00 00 4c 1a 00 00 4b ce 00 00 4b ab 00 00 4c eb 00 00 4c 73 00 00 4c 1f 00 00 4b d1 00 00 4b af 00 00 4c f3 00 00 4c 7a 00 00 4c 1f 00 00 4b d1 00 00 4b b0 00 00 4c fa 00 00 4c 7e 00 00 4c 1c 00 00 4b ce 00 00 4b af 00 00 4d 02 00 00 4c 7d 00 00 4c 17 00 00 4b c8 00 00 4b ac 00 00 4d 06 00 00 4c 7a 00 00 4c 0b 00 00 4b c2 00 00 4b a7 00 00 4d 03 00 00 4c 74 00 00 4b fd 00 00 4b bb 00 00 4b 9d 00 00 4c fa 00 00 4c 5e 00 00 4b f6 00 00 4b b4 00 00 4b 99 00 00 4c f0 00 00 4c 4c 00 00 4b f2 00 00 4b ad 00 00 4b 99 00 00 4c e2 00 00 4c 45 00 00 4b ed 00 00 4b a6 00 00 4b 98 00 00 4c d3 00 00 4c 40 00 00 4b e3 00 00 4b a2 00 00 4b 91 00 00 4c c7 00 00 4c 37 00 00 4b d8 00 00 4b 9e 00 00 4b 83 00 00 4c bc 00 00 4c 2c 00 00 4b d1 00 00 4b 97 00 00 4b 7e 00 00 4c b2 00 00 4c 23 00 00 4b cb 00 00 4b 89 00 00 4b 7c 00 00 4c ab 00 00 4c 1c 00 00 4b c4 00 00 4b 81 00 00 4b 7b 00 00 4c a3 00 00 4c 18 00 00 4b b9 00 00 4b 7e 00 00 4b 79 00 00 4c 99 00 00 4c 16 00 00 4b b3 00 00 4b 7c 00 00 4b 76 00 00 4c 91 00 00 4c 15 00 00 4b b0 00 00 4b 7a 00 00 4b 73 00 00 4c 91 00 00 4c 15 00 00 4b af 00 00 4b 79 00 00 4b 6f 00 00 4c 97 00 00 4c 1b 00 00 4b b6 00 00 4b 7b 00 00 4b 6f 00 00 4c 9f 00 00 4c 23 00 00 4b cc 00 00 4b 88 00 00 4b 71 00 00 4c b1 00 00 4c 2a 00 00 4b d3 00 00 4b 8f 00 00 4b 73 00 00 4c c3 00 00 4c 31 00 00 4b ca 00 00 4b 80 00 00 4b 69 00 00 4c c3 00 00 4c 31 00 00 4b bd 00 00 4b 6e 00 00 4b 5a 00 00 4c bc 00 00 4c 21 00 00 4b b2 00 00 4b 6d 00 00 4b 67 00 00 4c b4 00 00 4c 15 00 00 4b a8 00 00 4b 70 00 00 4b 96 00 00 4c ad 00 00 4c 15 00 00 4b a7 00 00 4b 76 00 00 4b a7 00 00 4c a6 00 00 4c 15 00 00 4b ae 00 00 4b 93 00 00 4b 9f 00 00 4c a1 00 00 4c 17 00 00 4b b7 00 00 4b a7 00 00 4b 93 00 00 4c 9e 00 00 4c 26 00 00 4b c9 00 00 4b a2 00 00 4b 8a 00 00 4c 9c 00 00 4c 2f 00 00 4b da 00 00 4b 98 00 00 4b 82 00 00 4c 9c 00 00 4c 2d 00 00 4b d8 00 00 4b 92 00 00 4b 7b 00 00 4c 9c 00 00 4c 29 00 00 4b cf 00 00 4b 8d 00 00 4b 74 00 00 4c 9a 00 00 4c 24 00 00 4b c6 00 00 4b 89 00 00 4b 72 00 00 4c 96 00 00 4c 1e 00 00 4b be 00 00 4b 87 00 00 4b 76 00 00 4c 91 00 00 4c 18 00 00 4b b9 00 00 4b 86 00 00 4b 7a 00 00 4c 8a 00 00 4c 15 00 00 4b b8 00 00 4b 87 00 00 4b 7a 00 00 4c 82 00 00 4c 12 00 00 4b b8 00 00 4b 8a 00 00 4b 79 00 00 4c 7a 00 00 4c 09 00 00 4b b7 00 00 4b 89 00 00 4b 76 00 00 4c 6f 00 00 4b fc 00 00 4b b5 00 00 4b 85 00 00 4b 6e 00 00 4c 5e 00 00 4b f6 00 00 4b b3 00 00 4b 7e 00 00 4b 71 00 00 4b ff 00 00 4b e8 00 00 4b af 00 00 4b 78 00 00 4b 78 00 00 4b 8d 00 00 4b cf 00 00 4b 9f 00 00 4b 76 00 00 4b 68 00 00 4b 49 00 00 4b ce 00 00 4b 9d 00 00 4b 73 00 00 4b 66 00 00 4b 4a 00 00 4b 87 00 00 4b 96 00 00 4b 6e 00 00 4b 62 00 00 4b 4d 00 00 4b 71 00 00 4b 83 00 00 4b 69 00 00 4b 57 00 00 4b 74 00 00 4b 71 00 00 4b 7b 00 00 4b 66 00 00 4b 57 00 00 4c 44 00 00 4b e4 00 00 4b 6c 00 00 4b 6d 00 00 4b 71 00 00 4b 41 00 00 4b f1 00 00 4b 69 00 00 4b 81 00 00 4b 7d 00 00 4b 3c 00 00 4b 3f 00 00 4b 7c 00 00 4b 86 00 00 4b 7f 00 00 52 d4 00 00 51 a7 00 00 4b c7 00 00 4b 88 00 00 4b 80 00 00 52 d4 00 00 51 a7 00 00 4b c7 00 00 4b 88 00 00 4b 80 00 00 52 d4 00 00 51 a7 00 00 4b c7 00 00 4b 88 00 00 4b 80];
+			};
+
+			qcom,pc-temp-z4-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 3c 81 00 00 3b 61 00 00 3a 94 00 00 3a 18 00 00 39 f3 00 00 3e 9f 00 00 3b d3 00 00 3a 0e 00 00 39 9b 00 00 39 8b 00 00 3d a4 00 00 3c 05 00 00 3a 41 00 00 39 85 00 00 39 73 00 00 3c 72 00 00 3b 42 00 00 3a 76 00 00 39 e0 00 00 39 ae 00 00 3b cc 00 00 3a c2 00 00 3a 37 00 00 39 c8 00 00 39 9d 00 00 3b 4d 00 00 3a 79 00 00 3a 0b 00 00 39 af 00 00 39 8b 00 00 3a ee 00 00 3a 43 00 00 39 ee 00 00 39 9d 00 00 39 7f 00 00 3a a4 00 00 3a 18 00 00 39 d8 00 00 39 90 00 00 39 75 00 00 3a 6b 00 00 39 f7 00 00 39 c8 00 00 39 8a 00 00 39 73 00 00 3a 40 00 00 39 e0 00 00 39 bb 00 00 39 87 00 00 39 73 00 00 3a 1e 00 00 39 ce 00 00 39 ae 00 00 39 83 00 00 39 71 00 00 39 fe 00 00 39 c1 00 00 39 a3 00 00 39 7f 00 00 39 67 00 00 39 dc 00 00 39 b5 00 00 39 99 00 00 39 7b 00 00 39 5e 00 00 39 c7 00 00 39 ab 00 00 39 93 00 00 39 73 00 00 39 5f 00 00 39 bf 00 00 39 a4 00 00 39 8c 00 00 39 6b 00 00 39 62 00 00 39 ba 00 00 39 9f 00 00 39 83 00 00 39 69 00 00 39 61 00 00 39 b5 00 00 39 9a 00 00 39 79 00 00 39 69 00 00 39 58 00 00 39 b0 00 00 39 92 00 00 39 72 00 00 39 68 00 00 39 4f 00 00 39 ab 00 00 39 8a 00 00 39 6d 00 00 39 60 00 00 39 46 00 00 39 a7 00 00 39 81 00 00 39 68 00 00 39 55 00 00 39 3f 00 00 39 a3 00 00 39 78 00 00 39 60 00 00 39 4e 00 00 39 3c 00 00 39 9e 00 00 39 75 00 00 39 58 00 00 39 48 00 00 39 39 00 00 39 97 00 00 39 78 00 00 39 66 00 00 39 4f 00 00 39 3f 00 00 39 94 00 00 39 7f 00 00 39 9a 00 00 39 83 00 00 39 70 00 00 39 bd 00 00 39 a5 00 00 39 c3 00 00 39 b1 00 00 39 9e 00 00 39 f3 00 00 39 eb 00 00 39 e2 00 00 39 ca 00 00 39 b5 00 00 39 fd 00 00 39 fe 00 00 39 f3 00 00 39 d9 00 00 39 c3 00 00 3a 00 00 00 39 fa 00 00 39 f2 00 00 39 d6 00 00 39 b1 00 00 3a 00 00 00 39 f3 00 00 39 ee 00 00 39 c9 00 00 39 72 00 00 39 f6 00 00 39 e7 00 00 39 e6 00 00 39 b4 00 00 39 55 00 00 39 e7 00 00 39 d5 00 00 39 d1 00 00 39 85 00 00 39 51 00 00 39 d9 00 00 39 c0 00 00 39 b8 00 00 39 62 00 00 39 4f 00 00 39 cc 00 00 39 a5 00 00 39 95 00 00 39 59 00 00 39 4b 00 00 39 c0 00 00 39 93 00 00 39 78 00 00 39 54 00 00 39 47 00 00 39 b5 00 00 39 8c 00 00 39 70 00 00 39 51 00 00 39 46 00 00 39 ac 00 00 39 87 00 00 39 6c 00 00 39 4f 00 00 39 45 00 00 39 a5 00 00 39 83 00 00 39 6b 00 00 39 4f 00 00 39 46 00 00 39 9f 00 00 39 7e 00 00 39 6a 00 00 39 51 00 00 39 4c 00 00 39 99 00 00 39 7c 00 00 39 6a 00 00 39 54 00 00 39 53 00 00 39 93 00 00 39 7d 00 00 39 74 00 00 39 5b 00 00 39 53 00 00 39 8d 00 00 39 7e 00 00 39 85 00 00 39 62 00 00 39 53 00 00 39 86 00 00 39 7c 00 00 39 85 00 00 39 63 00 00 39 53 00 00 39 80 00 00 39 75 00 00 39 7a 00 00 39 60 00 00 39 53 00 00 39 7b 00 00 39 6e 00 00 39 77 00 00 39 63 00 00 39 51 00 00 39 a5 00 00 39 60 00 00 39 73 00 00 39 69 00 00 39 49 00 00 39 f5 00 00 39 55 00 00 39 5c 00 00 39 4e 00 00 39 44 00 00 3a 3a 00 00 39 56 00 00 39 55 00 00 39 45 00 00 39 39 00 00 3a 3b 00 00 39 9c 00 00 39 48 00 00 39 35 00 00 39 2b 00 00 3a 39 00 00 39 ad 00 00 39 4a 00 00 39 2a 00 00 39 26 00 00 3a 19 00 00 39 ac 00 00 39 55 00 00 39 3a 00 00 39 32 00 00 39 9e 00 00 39 4d 00 00 39 85 00 00 39 44 00 00 39 24 00 00 43 12 00 00 39 98 00 00 39 99 00 00 39 33 00 00 39 1b 00 00 43 be 00 00 42 31 00 00 39 8c 00 00 39 30 00 00 39 1c 00 00 3a 45 00 00 3a 7f 00 00 39 46 00 00 39 35 00 00 39 22 00 00 3a 45 00 00 3a 7f 00 00 39 46 00 00 39 35 00 00 39 22 00 00 3a 45 00 00 3a 7f 00 00 39 46 00 00 39 35 00 00 39 22];
+			};
+
+			qcom,pc-temp-z5-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 2c 87 00 00 31 cd 00 00 34 a1 00 00 37 a5 00 00 3a 57 00 00 37 a5 00 00 41 24 00 00 48 67 00 00 49 42 00 00 41 cb 00 00 3c 1c 00 00 41 fd 00 00 4d 49 00 00 54 b4 00 00 4a f2 00 00 3f fd 00 00 45 0b 00 00 4a c2 00 00 50 36 00 00 52 94 00 00 42 bb 00 00 48 17 00 00 4d 35 00 00 51 bf 00 00 55 4c 00 00 44 f4 00 00 4b 53 00 00 4d df 00 00 53 9a 00 00 57 47 00 00 47 b2 00 00 4e 2b 00 00 4d b0 00 00 55 c7 00 00 5a 1f 00 00 4b 66 00 00 50 53 00 00 4d 8e 00 00 57 84 00 00 5c 70 00 00 4e c2 00 00 52 00 00 00 4d 99 00 00 56 e4 00 00 5b 30 00 00 50 c1 00 00 52 79 00 00 4d b7 00 00 54 5e 00 00 55 6e 00 00 52 66 00 00 52 92 00 00 4e ac 00 00 52 2f 00 00 53 32 00 00 55 7f 00 00 52 bb 00 00 51 b5 00 00 50 2c 00 00 57 a5 00 00 5c 14 00 00 54 f8 00 00 52 fa 00 00 4f 1b 00 00 5b c5 00 00 60 72 00 00 57 f9 00 00 52 6f 00 00 50 1d 00 00 57 0c 00 00 60 c9 00 00 58 3f 00 00 51 eb 00 00 51 bd 00 00 4d b1 00 00 60 f9 00 00 57 a4 00 00 53 70 00 00 50 9e 00 00 4c 38 00 00 61 ab 00 00 57 61 00 00 56 b0 00 00 4b 39 00 00 4f 18 00 00 63 ae 00 00 59 7c 00 00 57 93 00 00 48 e6 00 00 52 d8 00 00 65 1f 00 00 5d 61 00 00 57 a3 00 00 4b 1b 00 00 57 b0 00 00 65 66 00 00 61 cb 00 00 57 c2 00 00 4e e2 00 00 5c e8 00 00 65 9c 00 00 67 d0 00 00 5b 7b 00 00 53 19 00 00 61 60 00 00 68 68 00 00 70 35 00 00 64 78 00 00 59 13 00 00 65 55 00 00 75 c6 00 00 7f 29 00 00 82 0d 00 00 64 c1 00 00 66 7d 00 00 89 1d 00 00 8e 51 00 00 c3 68 00 00 7e c1 00 00 66 b5 00 00 b3 d9 00 00 99 15 00 00 d8 27 00 00 8c 01 00 00 66 c3 00 00 de 22 00 00 a1 b8 00 00 ac a3 00 00 70 bc 00 00 56 75 00 00 da 94 00 00 9f de 00 00 7c 3f 00 00 4d 28 00 00 3f b7 00 00 ba f9 00 00 81 94 00 00 65 d6 00 00 44 18 00 00 44 83 00 00 a1 3c 00 00 67 fe 00 00 56 63 00 00 3f be 00 00 5c 7f 00 00 90 2e 00 00 62 83 00 00 52 6f 00 00 40 62 00 00 66 3e 00 00 85 75 00 00 5f 6b 00 00 51 38 00 00 50 7c 00 00 66 b6 00 00 84 c3 00 00 62 c0 00 00 51 1e 00 00 60 8b 00 00 67 30 00 00 84 f9 00 00 77 4c 00 00 64 b3 00 00 66 ad 00 00 68 d0 00 00 85 dc 00 00 8a 16 00 00 80 07 00 00 6b 82 00 00 6b 9b 00 00 8f 78 00 00 96 0d 00 00 8b f1 00 00 74 88 00 00 6e 96 00 00 98 c5 00 00 9e 1c 00 00 93 be 00 00 82 32 00 00 72 04 00 00 99 28 00 00 9e 2d 00 00 95 34 00 00 87 39 00 00 76 af 00 00 98 cf 00 00 9a ef 00 00 90 63 00 00 85 61 00 00 80 4f 00 00 97 e9 00 00 96 b8 00 00 88 df 00 00 81 c4 00 00 87 fd 00 00 92 ec 00 00 91 3a 00 00 7d 33 00 00 78 e3 00 00 80 49 00 00 8b da 00 00 89 8e 00 00 6f 54 00 00 6a 6f 00 00 6b d4 00 00 85 09 00 00 7a e3 00 00 68 92 00 00 61 71 00 00 5d c7 00 00 7c bd 00 00 69 cb 00 00 64 f0 00 00 5b f2 00 00 53 fd 00 00 72 85 00 00 67 30 00 00 5f 55 00 00 51 5b 00 00 54 4e 00 00 53 30 00 00 68 c0 00 00 5b e2 00 00 48 ec 00 00 57 a4 00 00 35 5b 00 00 69 26 00 00 5e 63 00 00 50 8b 00 00 4c b4 00 00 2e db 00 00 64 5b 00 00 5b 30 00 00 50 5c 00 00 50 7c 00 00 2e 51 00 00 3c 45 00 00 58 7d 00 00 54 46 00 00 53 2b 00 00 2e 18 00 00 34 bf 00 00 4b 88 00 00 5a ba 00 00 51 67 00 00 30 8e 00 00 34 2b 00 00 43 9b 00 00 4a fb 00 00 45 34 00 00 ab e7 00 00 a6 9f 00 00 37 a8 00 00 41 e4 00 00 65 bc 00 00 33 c2 00 00 60 fd 00 00 33 73 00 00 50 a0 00 00 88 bc 00 00 27 e1 00 00 29 2f 00 00 36 3b 00 00 56 69 00 00 8f 45 00 00 4a b4 00 00 33 51 00 00 61 af 00 00 55 77 00 00 85 4c 00 00 4a b4 00 00 33 51 00 00 61 af 00 00 55 77 00 00 85 4c 00 00 4a b4 00 00 33 51 00 00 61 af 00 00 55 77 00 00 85 4c];
+			};
+
+			qcom,pc-temp-z6-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 3b 5c 00 00 39 f6 00 00 39 01 00 00 38 86 00 00 38 68 00 00 3c a8 00 00 3a 6e 00 00 38 f3 00 00 38 70 00 00 38 4b 00 00 3c 3c 00 00 3a 8c 00 00 39 13 00 00 38 64 00 00 38 41 00 00 3b b2 00 00 3a 31 00 00 39 38 00 00 38 a3 00 00 38 71 00 00 3b 5d 00 00 39 f3 00 00 39 1d 00 00 38 9a 00 00 38 6d 00 00 3b 17 00 00 39 cf 00 00 39 08 00 00 38 90 00 00 38 67 00 00 3a e1 00 00 39 b2 00 00 38 f9 00 00 38 87 00 00 38 61 00 00 3a b7 00 00 39 9a 00 00 38 ea 00 00 38 7e 00 00 38 5b 00 00 3a 94 00 00 39 85 00 00 38 dc 00 00 38 77 00 00 38 56 00 00 3a 74 00 00 39 70 00 00 38 ce 00 00 38 72 00 00 38 52 00 00 3a 59 00 00 39 5b 00 00 38 c5 00 00 38 6d 00 00 38 4e 00 00 3a 3e 00 00 39 4b 00 00 38 bd 00 00 38 67 00 00 38 4a 00 00 3a 22 00 00 39 41 00 00 38 b6 00 00 38 61 00 00 38 46 00 00 3a 0e 00 00 39 38 00 00 38 ad 00 00 38 5c 00 00 38 42 00 00 3a 02 00 00 39 30 00 00 38 a5 00 00 38 57 00 00 38 3d 00 00 39 fa 00 00 39 27 00 00 38 9d 00 00 38 51 00 00 38 38 00 00 39 f3 00 00 39 1f 00 00 38 96 00 00 38 4b 00 00 38 34 00 00 39 ec 00 00 39 18 00 00 38 8f 00 00 38 45 00 00 38 30 00 00 39 e6 00 00 39 13 00 00 38 88 00 00 38 40 00 00 38 2b 00 00 39 e0 00 00 39 0e 00 00 38 82 00 00 38 3b 00 00 38 27 00 00 39 db 00 00 39 0a 00 00 38 7e 00 00 38 38 00 00 38 24 00 00 39 db 00 00 39 09 00 00 38 7b 00 00 38 35 00 00 38 21 00 00 39 dc 00 00 39 0e 00 00 38 85 00 00 38 3a 00 00 38 23 00 00 39 df 00 00 39 17 00 00 38 a8 00 00 38 5a 00 00 38 3c 00 00 39 fd 00 00 39 2e 00 00 38 bc 00 00 38 6d 00 00 38 4e 00 00 3a 20 00 00 39 51 00 00 38 c4 00 00 38 6f 00 00 38 51 00 00 3a 24 00 00 39 59 00 00 38 c7 00 00 38 6f 00 00 38 53 00 00 3a 23 00 00 39 52 00 00 38 c5 00 00 38 6e 00 00 38 52 00 00 3a 21 00 00 39 49 00 00 38 be 00 00 38 6a 00 00 38 51 00 00 3a 1a 00 00 39 43 00 00 38 b9 00 00 38 66 00 00 38 4e 00 00 3a 11 00 00 39 3d 00 00 38 b5 00 00 38 62 00 00 38 49 00 00 3a 0a 00 00 39 39 00 00 38 b1 00 00 38 5e 00 00 38 43 00 00 3a 04 00 00 39 35 00 00 38 ae 00 00 38 58 00 00 38 3d 00 00 3a 00 00 00 39 32 00 00 38 aa 00 00 38 52 00 00 38 37 00 00 39 fd 00 00 39 30 00 00 38 a6 00 00 38 4d 00 00 38 33 00 00 39 fb 00 00 39 2e 00 00 38 a1 00 00 38 49 00 00 38 2f 00 00 39 f9 00 00 39 2b 00 00 38 9d 00 00 38 47 00 00 38 2d 00 00 39 f7 00 00 39 26 00 00 38 9a 00 00 38 48 00 00 38 32 00 00 39 f6 00 00 39 25 00 00 38 98 00 00 38 49 00 00 38 37 00 00 39 f6 00 00 39 26 00 00 38 9d 00 00 38 4c 00 00 38 37 00 00 39 f6 00 00 39 28 00 00 38 a6 00 00 38 51 00 00 38 37 00 00 39 f5 00 00 39 26 00 00 38 a7 00 00 38 52 00 00 38 36 00 00 39 f4 00 00 39 21 00 00 38 a2 00 00 38 4e 00 00 38 32 00 00 39 f2 00 00 39 1f 00 00 38 a2 00 00 38 4e 00 00 38 33 00 00 39 e2 00 00 39 19 00 00 38 a1 00 00 38 4d 00 00 38 35 00 00 39 cf 00 00 39 0a 00 00 38 91 00 00 38 42 00 00 38 2a 00 00 39 cd 00 00 39 0b 00 00 38 8d 00 00 38 3d 00 00 38 25 00 00 39 ce 00 00 39 05 00 00 38 85 00 00 38 33 00 00 38 1c 00 00 39 d1 00 00 39 03 00 00 38 7d 00 00 38 2b 00 00 38 14 00 00 39 da 00 00 39 05 00 00 38 7e 00 00 38 31 00 00 38 1a 00 00 3a 0d 00 00 39 1a 00 00 38 8e 00 00 38 3c 00 00 38 24 00 00 3d 8b 00 00 39 43 00 00 38 9a 00 00 38 42 00 00 38 28 00 00 3d e7 00 00 3c a2 00 00 38 a4 00 00 38 45 00 00 38 2b 00 00 3d dc 00 00 3d 04 00 00 38 b7 00 00 38 4b 00 00 38 32 00 00 3d dc 00 00 3d 04 00 00 38 b7 00 00 38 4b 00 00 38 32 00 00 3d dc 00 00 3d 04 00 00 38 b7 00 00 38 4b 00 00 38 32];
+			};
+
+			qcom,pc-temp-y1-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 15 e5 00 00 14 2a 00 00 13 3a 00 00 12 7c 00 00 12 0c 00 00 11 ec 00 00 15 c9 00 00 14 29 00 00 13 3d 00 00 12 7c 00 00 12 0d 00 00 11 eb 00 00 15 b5 00 00 14 29 00 00 13 41 00 00 12 7d 00 00 12 0d 00 00 11 eb 00 00 15 a8 00 00 14 29 00 00 13 44 00 00 12 7d 00 00 12 0d 00 00 11 eb 00 00 15 a1 00 00 14 29 00 00 13 46 00 00 12 7c 00 00 12 0d 00 00 11 ea 00 00 15 a0 00 00 14 2a 00 00 13 47 00 00 12 7c 00 00 12 0d 00 00 11 ea 00 00 15 a8 00 00 14 2b 00 00 13 46 00 00 12 7c 00 00 12 0b 00 00 11 eb 00 00 15 b2 00 00 14 2d 00 00 13 45 00 00 12 7b 00 00 12 09 00 00 11 eb 00 00 15 b6 00 00 14 2d 00 00 13 45 00 00 12 7b 00 00 12 08 00 00 11 eb 00 00 15 b7 00 00 14 2c 00 00 13 45 00 00 12 7b 00 00 12 07 00 00 11 ea 00 00 15 b8 00 00 14 2c 00 00 13 44 00 00 12 7a 00 00 12 07 00 00 11 ea 00 00 15 b8 00 00 14 2d 00 00 13 44 00 00 12 7a 00 00 12 07 00 00 11 ea 00 00 15 b8 00 00 14 2e 00 00 13 42 00 00 12 7a 00 00 12 07 00 00 11 ea 00 00 15 b8 00 00 14 2e 00 00 13 42 00 00 12 7a 00 00 12 07 00 00 11 eb 00 00 15 b9 00 00 14 2f 00 00 13 41 00 00 12 79 00 00 12 07 00 00 11 ec 00 00 15 b9 00 00 14 2f 00 00 13 40 00 00 12 79 00 00 12 08 00 00 11 ed 00 00 15 bb 00 00 14 2f 00 00 13 40 00 00 12 79 00 00 12 09 00 00 11 ef 00 00 15 be 00 00 14 2f 00 00 13 40 00 00 12 79 00 00 12 0a 00 00 11 ef 00 00 15 c1 00 00 14 30 00 00 13 40 00 00 12 77 00 00 12 0a 00 00 11 ee 00 00 15 c4 00 00 14 32 00 00 13 40 00 00 12 76 00 00 12 0a 00 00 11 ed 00 00 15 c6 00 00 14 35 00 00 13 40 00 00 12 78 00 00 12 0a 00 00 11 ed 00 00 15 c8 00 00 14 39 00 00 13 40 00 00 12 7c 00 00 12 0a 00 00 11 ef 00 00 15 c9 00 00 14 3e 00 00 13 41 00 00 12 7e 00 00 12 0b 00 00 11 f0 00 00 15 c6 00 00 14 43 00 00 13 43 00 00 12 7e 00 00 12 0d 00 00 11 f1 00 00 15 c1 00 00 14 47 00 00 13 44 00 00 12 7f 00 00 12 0e 00 00 11 f2 00 00 15 be 00 00 14 47 00 00 13 44 00 00 12 83 00 00 12 10 00 00 11 f2 00 00 15 bd 00 00 14 47 00 00 13 42 00 00 12 87 00 00 12 11 00 00 11 f2 00 00 15 bb 00 00 14 47 00 00 13 42 00 00 12 87 00 00 12 12 00 00 11 f3 00 00 15 b1 00 00 14 48 00 00 13 49 00 00 12 86 00 00 12 12 00 00 11 f5 00 00 15 a6 00 00 14 49 00 00 13 50 00 00 12 86 00 00 12 13 00 00 11 f7 00 00 15 a2 00 00 14 47 00 00 13 4c 00 00 12 86 00 00 12 15 00 00 11 f8 00 00 15 a0 00 00 14 41 00 00 13 43 00 00 12 87 00 00 12 18 00 00 11 f9 00 00 15 a0 00 00 14 3c 00 00 13 41 00 00 12 88 00 00 12 1a 00 00 11 fa 00 00 15 af 00 00 14 38 00 00 13 43 00 00 12 8a 00 00 12 1b 00 00 11 fc 00 00 15 bf 00 00 14 34 00 00 13 44 00 00 12 8d 00 00 12 1d 00 00 11 fd 00 00 15 c0 00 00 14 31 00 00 13 45 00 00 12 93 00 00 12 1d 00 00 11 ff 00 00 15 be 00 00 14 2f 00 00 13 45 00 00 12 96 00 00 12 1f 00 00 12 01 00 00 15 bb 00 00 14 2e 00 00 13 47 00 00 12 94 00 00 12 21 00 00 12 02 00 00 15 b6 00 00 14 2f 00 00 13 4f 00 00 12 92 00 00 12 23 00 00 12 03 00 00 15 b2 00 00 14 2f 00 00 13 54 00 00 12 91 00 00 12 24 00 00 12 03 00 00 15 b2 00 00 14 2c 00 00 13 54 00 00 12 90 00 00 12 25 00 00 12 02 00 00 15 b3 00 00 14 2b 00 00 13 54 00 00 12 97 00 00 12 26 00 00 12 03 00 00 15 a4 00 00 14 2e 00 00 13 49 00 00 12 9c 00 00 12 26 00 00 12 07 00 00 15 96 00 00 14 2b 00 00 13 4a 00 00 12 9e 00 00 12 29 00 00 12 08 00 00 15 af 00 00 14 32 00 00 13 55 00 00 12 9a 00 00 12 28 00 00 12 08 00 00 15 c3 00 00 14 33 00 00 13 61 00 00 12 9b 00 00 12 2c 00 00 12 0a 00 00 15 be 00 00 14 39 00 00 13 50 00 00 12 a4 00 00 12 2e 00 00 12 0b 00 00 15 c9 00 00 14 41 00 00 13 50 00 00 12 a2 00 00 12 2d 00 00 12 0a 00 00 15 e0 00 00 14 5f 00 00 13 5d 00 00 12 a4 00 00 12 2e 00 00 12 0c 00 00 16 31 00 00 14 67 00 00 13 60 00 00 12 ac 00 00 12 30 00 00 12 0c 00 00 16 84 00 00 14 86 00 00 13 6e 00 00 12 b4 00 00 12 32 00 00 12 0d 00 00 16 f6 00 00 14 c7 00 00 13 77 00 00 12 c1 00 00 12 38 00 00 12 13 00 00 17 d7 00 00 15 4c 00 00 13 95 00 00 12 c3 00 00 12 3f 00 00 12 1a 00 00 17 d8 00 00 15 e1 00 00 13 e0 00 00 12 e1 00 00 12 4e 00 00 12 25 00 00 17 d8 00 00 15 e1 00 00 13 e0 00 00 12 e1 00 00 12 4e 00 00 12 25 00 00 17 d8 00 00 15 e1 00 00 13 e0 00 00 12 e1 00 00 12 4e 00 00 12 25];
+			};
+
+			qcom,pc-temp-y2-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 28 b5 00 00 2b 94 00 00 2c b3 00 00 2e bc 00 00 2f 5a 00 00 2e f0 00 00 28 f9 00 00 2b 96 00 00 2c ad 00 00 2e 66 00 00 2f 2c 00 00 2f 6a 00 00 29 4d 00 00 2b 94 00 00 2c a1 00 00 2e 13 00 00 2e f4 00 00 2f 9b 00 00 29 a2 00 00 2b 91 00 00 2c 8f 00 00 2d c6 00 00 2e b4 00 00 2f 97 00 00 29 e8 00 00 2b 8b 00 00 2c 79 00 00 2d 84 00 00 2e 6c 00 00 2f 6f 00 00 2a 0d 00 00 2b 84 00 00 2c 5f 00 00 2d 53 00 00 2e 1c 00 00 2f 30 00 00 2a 1c 00 00 2b 7a 00 00 2c 3c 00 00 2d 2d 00 00 2d aa 00 00 2e 99 00 00 2a 26 00 00 2b 70 00 00 2c 1b 00 00 2d 0f 00 00 2d 5d 00 00 2e 05 00 00 2a 32 00 00 2b 65 00 00 2c 0b 00 00 2c f7 00 00 2d 78 00 00 2d c3 00 00 2a 3e 00 00 2b 5a 00 00 2c 00 00 00 2c e4 00 00 2d b0 00 00 2d 97 00 00 2a 4e 00 00 2b 58 00 00 2b fd 00 00 2c de 00 00 2d b5 00 00 2d 92 00 00 2a 65 00 00 2b 69 00 00 2c 04 00 00 2c db 00 00 2d 8a 00 00 2d a6 00 00 2a 82 00 00 2b 80 00 00 2c 11 00 00 2c db 00 00 2d 71 00 00 2d bd 00 00 2a a8 00 00 2b 95 00 00 2c 2a 00 00 2d 0c 00 00 2d 82 00 00 2d d2 00 00 2a d4 00 00 2b ac 00 00 2c 55 00 00 2d 5f 00 00 2d a2 00 00 2d eb 00 00 2a f5 00 00 2b c7 00 00 2c 85 00 00 2d a3 00 00 2d c0 00 00 2e 1e 00 00 2b 0c 00 00 2b eb 00 00 2c bf 00 00 2d e6 00 00 2d e4 00 00 2e 75 00 00 2b 1e 00 00 2c 0a 00 00 2c ee 00 00 2e 2d 00 00 2e 15 00 00 2e b7 00 00 2b 2d 00 00 2c 23 00 00 2d 0d 00 00 2e 7b 00 00 2e 60 00 00 2e db 00 00 2b 38 00 00 2c 34 00 00 2d 22 00 00 2e c0 00 00 2e c0 00 00 2f 09 00 00 2b 3c 00 00 2c 38 00 00 2d 22 00 00 2e fc 00 00 2f 67 00 00 2f 98 00 00 2b 3e 00 00 2c 39 00 00 2d 16 00 00 2f 28 00 00 30 15 00 00 30 51 00 00 2b 3e 00 00 2c 3c 00 00 2d 10 00 00 2f 02 00 00 30 1c 00 00 30 6b 00 00 29 a5 00 00 2c 5d 00 00 2d 1b 00 00 2e 4f 00 00 2f c3 00 00 30 44 00 00 27 02 00 00 2c 81 00 00 2d 2d 00 00 2d ff 00 00 2f 76 00 00 30 1d 00 00 26 51 00 00 2c 85 00 00 2d 40 00 00 2e 3a 00 00 2f 3e 00 00 2f fc 00 00 26 29 00 00 2c 86 00 00 2d 57 00 00 2e 7b 00 00 2f 1b 00 00 2f e4 00 00 26 11 00 00 2c 87 00 00 2d 70 00 00 2e 87 00 00 2f 72 00 00 30 24 00 00 25 ff 00 00 2c 88 00 00 2d 93 00 00 2e 8c 00 00 30 43 00 00 30 f2 00 00 25 f2 00 00 2c 89 00 00 2d ab 00 00 2e a2 00 00 30 74 00 00 31 a2 00 00 25 ea 00 00 2c 8b 00 00 2d ae 00 00 2e fe 00 00 30 2a 00 00 32 46 00 00 25 e4 00 00 2c 8e 00 00 2d af 00 00 2f 47 00 00 2f f8 00 00 32 9d 00 00 25 df 00 00 2c 86 00 00 2d af 00 00 2f 63 00 00 30 b9 00 00 32 9b 00 00 25 da 00 00 2c 45 00 00 2d a8 00 00 2f 73 00 00 31 cb 00 00 32 93 00 00 25 d6 00 00 2b f5 00 00 2d 9d 00 00 2f 74 00 00 31 d9 00 00 32 6b 00 00 25 d2 00 00 2b b9 00 00 2d 89 00 00 2f 74 00 00 31 85 00 00 31 e9 00 00 25 ce 00 00 2b 6b 00 00 2d 68 00 00 2f 72 00 00 31 0e 00 00 31 9d 00 00 25 cb 00 00 2a 62 00 00 2d 3b 00 00 2f 5d 00 00 30 1b 00 00 31 8f 00 00 25 c8 00 00 27 c9 00 00 2c f7 00 00 2f 37 00 00 2f 67 00 00 31 81 00 00 25 c7 00 00 26 59 00 00 2c a4 00 00 2e c6 00 00 2f ac 00 00 31 0f 00 00 25 c5 00 00 26 12 00 00 2c 39 00 00 2e 5d 00 00 30 0a 00 00 30 52 00 00 25 c3 00 00 25 ee 00 00 2b bd 00 00 2e 68 00 00 2f db 00 00 30 16 00 00 25 c0 00 00 25 dc 00 00 2b 35 00 00 2e 7f 00 00 2f 20 00 00 2f 89 00 00 25 bf 00 00 25 cf 00 00 28 44 00 00 2e 3b 00 00 2f e2 00 00 2f 55 00 00 25 c3 00 00 25 c7 00 00 27 b8 00 00 2d 74 00 00 2e c7 00 00 2f ca 00 00 26 24 00 00 25 be 00 00 26 62 00 00 2d 07 00 00 2e 70 00 00 2e 6f 00 00 25 c7 00 00 25 c6 00 00 25 fc 00 00 2c e8 00 00 2e 30 00 00 2d ec 00 00 25 bf 00 00 26 38 00 00 25 d2 00 00 2c a6 00 00 2d e8 00 00 2d d3 00 00 25 b9 00 00 25 db 00 00 25 c0 00 00 2c 3c 00 00 2d 82 00 00 2d 4c 00 00 25 ba 00 00 25 c2 00 00 25 e1 00 00 2b 7d 00 00 2d 60 00 00 2d 8d 00 00 25 b4 00 00 25 b8 00 00 25 e4 00 00 2a 4c 00 00 2c e3 00 00 2d 04 00 00 25 b3 00 00 25 b4 00 00 25 cc 00 00 28 be 00 00 2c 8f 00 00 2c de 00 00 25 b3 00 00 25 b4 00 00 25 b9 00 00 27 2f 00 00 2c 5b 00 00 2c fc 00 00 25 b3 00 00 25 b4 00 00 25 b7 00 00 26 6b 00 00 2b d0 00 00 2c 94 00 00 25 b3 00 00 25 b4 00 00 25 b7 00 00 26 6b 00 00 2b d0 00 00 2c 94 00 00 25 b3 00 00 25 b4 00 00 25 b7 00 00 26 6b 00 00 2b d0 00 00 2c 94];
+			};
+
+			qcom,pc-temp-y3-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 34 77 00 00 34 1c 00 00 34 02 00 00 33 df 00 00 33 df 00 00 33 de 00 00 34 78 00 00 34 21 00 00 34 03 00 00 33 e3 00 00 33 db 00 00 33 d9 00 00 34 7c 00 00 34 25 00 00 34 05 00 00 33 e6 00 00 33 d9 00 00 33 d7 00 00 34 80 00 00 34 2a 00 00 34 06 00 00 33 e8 00 00 33 d8 00 00 33 d5 00 00 34 83 00 00 34 2d 00 00 34 07 00 00 33 e9 00 00 33 d7 00 00 33 d4 00 00 34 84 00 00 34 30 00 00 34 09 00 00 33 e9 00 00 33 d7 00 00 33 d4 00 00 34 84 00 00 34 32 00 00 34 0a 00 00 33 e8 00 00 33 d8 00 00 33 d6 00 00 34 84 00 00 34 33 00 00 34 0b 00 00 33 e7 00 00 33 d9 00 00 33 d7 00 00 34 83 00 00 34 33 00 00 34 0b 00 00 33 e8 00 00 33 dc 00 00 33 d8 00 00 34 82 00 00 34 33 00 00 34 0a 00 00 33 eb 00 00 33 e0 00 00 33 d9 00 00 34 80 00 00 34 32 00 00 34 0a 00 00 33 ed 00 00 33 e1 00 00 33 d9 00 00 34 7d 00 00 34 32 00 00 34 0a 00 00 33 ee 00 00 33 e2 00 00 33 da 00 00 34 7c 00 00 34 31 00 00 34 0a 00 00 33 ee 00 00 33 e3 00 00 33 da 00 00 34 7b 00 00 34 2f 00 00 34 0b 00 00 33 ee 00 00 33 e3 00 00 33 dd 00 00 34 7a 00 00 34 2e 00 00 34 0b 00 00 33 ee 00 00 33 e3 00 00 33 e0 00 00 34 79 00 00 34 2e 00 00 34 0b 00 00 33 ef 00 00 33 e4 00 00 33 e0 00 00 34 74 00 00 34 2f 00 00 34 08 00 00 33 f0 00 00 33 e7 00 00 33 e0 00 00 34 6c 00 00 34 30 00 00 34 06 00 00 33 f0 00 00 33 e8 00 00 33 e0 00 00 34 65 00 00 34 2e 00 00 34 07 00 00 33 ef 00 00 33 e7 00 00 33 df 00 00 34 5e 00 00 34 2b 00 00 34 09 00 00 33 ee 00 00 33 e7 00 00 33 de 00 00 34 58 00 00 34 27 00 00 34 08 00 00 33 ef 00 00 33 e7 00 00 33 e0 00 00 34 52 00 00 34 23 00 00 34 06 00 00 33 f0 00 00 33 e7 00 00 33 e4 00 00 34 4c 00 00 34 1f 00 00 34 03 00 00 33 ef 00 00 33 e6 00 00 33 e3 00 00 34 3f 00 00 34 1a 00 00 33 fe 00 00 33 ea 00 00 33 dd 00 00 33 da 00 00 34 32 00 00 34 16 00 00 33 fb 00 00 33 e6 00 00 33 d9 00 00 33 d5 00 00 34 30 00 00 34 14 00 00 33 fb 00 00 33 e3 00 00 33 d9 00 00 33 d5 00 00 34 32 00 00 34 12 00 00 33 fb 00 00 33 e1 00 00 33 d9 00 00 33 d5 00 00 34 35 00 00 34 11 00 00 33 fa 00 00 33 e2 00 00 33 d8 00 00 33 d5 00 00 34 38 00 00 34 10 00 00 33 f9 00 00 33 e4 00 00 33 d8 00 00 33 d7 00 00 34 3d 00 00 34 0e 00 00 33 f8 00 00 33 e5 00 00 33 d8 00 00 33 d7 00 00 34 45 00 00 34 09 00 00 33 f9 00 00 33 e6 00 00 33 d9 00 00 33 d6 00 00 34 53 00 00 34 01 00 00 33 f9 00 00 33 e6 00 00 33 d9 00 00 33 d5 00 00 34 63 00 00 34 00 00 00 33 f9 00 00 33 e6 00 00 33 da 00 00 33 d6 00 00 34 75 00 00 34 05 00 00 33 f9 00 00 33 e7 00 00 33 db 00 00 33 d8 00 00 34 8a 00 00 34 0b 00 00 33 f9 00 00 33 e7 00 00 33 db 00 00 33 d8 00 00 34 a5 00 00 34 11 00 00 33 f9 00 00 33 e6 00 00 33 db 00 00 33 d7 00 00 34 c6 00 00 34 16 00 00 33 fa 00 00 33 e6 00 00 33 da 00 00 33 d6 00 00 34 ee 00 00 34 1a 00 00 33 fb 00 00 33 e5 00 00 33 d8 00 00 33 d6 00 00 35 22 00 00 34 1d 00 00 33 fc 00 00 33 e5 00 00 33 d7 00 00 33 d5 00 00 35 62 00 00 34 23 00 00 33 fe 00 00 33 e3 00 00 33 d7 00 00 33 d5 00 00 35 af 00 00 34 31 00 00 33 ff 00 00 33 e2 00 00 33 d8 00 00 33 d7 00 00 36 16 00 00 34 47 00 00 34 01 00 00 33 e4 00 00 33 d9 00 00 33 d5 00 00 36 a6 00 00 34 6f 00 00 34 02 00 00 33 e4 00 00 33 da 00 00 33 d5 00 00 37 9f 00 00 34 a2 00 00 33 fe 00 00 33 e1 00 00 33 da 00 00 33 d7 00 00 39 51 00 00 35 05 00 00 33 ff 00 00 33 e0 00 00 33 d6 00 00 33 d5 00 00 3b 7b 00 00 36 90 00 00 34 1e 00 00 33 ea 00 00 33 dd 00 00 33 d7 00 00 35 47 00 00 39 90 00 00 34 43 00 00 33 ef 00 00 33 de 00 00 33 da 00 00 35 ad 00 00 3b 38 00 00 34 99 00 00 33 f3 00 00 33 e1 00 00 33 df 00 00 37 75 00 00 35 68 00 00 35 c2 00 00 33 fa 00 00 33 e5 00 00 33 df 00 00 41 d2 00 00 36 b6 00 00 3a 0e 00 00 33 fe 00 00 33 e5 00 00 33 dd 00 00 77 14 00 00 46 30 00 00 34 97 00 00 34 03 00 00 33 e2 00 00 33 dc 00 00 e1 22 00 00 67 da 00 00 35 cd 00 00 34 22 00 00 33 e3 00 00 33 df 00 00 ff ff 00 00 a1 f5 00 00 3c d8 00 00 35 28 00 00 33 e7 00 00 33 e1 00 00 ff ff 00 00 f5 6b 00 00 4a 25 00 00 34 59 00 00 33 ee 00 00 33 e5 00 00 ff ff 00 00 f5 6b 00 00 4a 25 00 00 34 59 00 00 33 ee 00 00 33 e5 00 00 ff ff 00 00 f5 6b 00 00 4a 25 00 00 34 59 00 00 33 ee 00 00 33 e5];
+			};
+
+			qcom,pc-temp-y4-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 41 1b 00 00 40 ba 00 00 40 97 00 00 40 80 00 00 40 52 00 00 40 47 00 00 41 37 00 00 40 c7 00 00 40 9e 00 00 40 70 00 00 40 4e 00 00 40 44 00 00 41 62 00 00 40 dc 00 00 40 a4 00 00 40 65 00 00 40 4a 00 00 40 41 00 00 41 90 00 00 40 f4 00 00 40 a9 00 00 40 5d 00 00 40 46 00 00 40 3e 00 00 41 b5 00 00 41 06 00 00 40 ac 00 00 40 59 00 00 40 43 00 00 40 3c 00 00 41 c6 00 00 41 0c 00 00 40 ad 00 00 40 58 00 00 40 43 00 00 40 3a 00 00 41 cb 00 00 41 0b 00 00 40 ab 00 00 40 5d 00 00 40 44 00 00 40 39 00 00 41 cd 00 00 41 09 00 00 40 a8 00 00 40 62 00 00 40 45 00 00 40 38 00 00 41 cf 00 00 41 06 00 00 40 a8 00 00 40 65 00 00 40 44 00 00 40 39 00 00 41 d0 00 00 41 04 00 00 40 a9 00 00 40 66 00 00 40 41 00 00 40 3c 00 00 41 d1 00 00 41 03 00 00 40 a9 00 00 40 69 00 00 40 41 00 00 40 3e 00 00 41 d9 00 00 41 0a 00 00 40 ad 00 00 40 6f 00 00 40 45 00 00 40 42 00 00 41 e5 00 00 41 15 00 00 40 b3 00 00 40 77 00 00 40 4b 00 00 40 44 00 00 41 f0 00 00 41 24 00 00 40 bb 00 00 40 80 00 00 40 52 00 00 40 44 00 00 41 fb 00 00 41 39 00 00 40 c6 00 00 40 8a 00 00 40 59 00 00 40 45 00 00 41 fd 00 00 41 4f 00 00 40 d5 00 00 40 94 00 00 40 5d 00 00 40 47 00 00 41 ea 00 00 41 67 00 00 40 eb 00 00 40 9f 00 00 40 60 00 00 40 4d 00 00 41 cd 00 00 41 74 00 00 41 03 00 00 40 ae 00 00 40 65 00 00 40 55 00 00 41 ab 00 00 41 6a 00 00 41 1f 00 00 40 c8 00 00 40 70 00 00 40 5f 00 00 41 81 00 00 41 54 00 00 41 37 00 00 40 d9 00 00 40 7e 00 00 40 6a 00 00 41 5d 00 00 41 34 00 00 41 31 00 00 40 db 00 00 40 91 00 00 40 75 00 00 41 3a 00 00 41 01 00 00 41 07 00 00 40 db 00 00 40 a4 00 00 40 7f 00 00 41 28 00 00 40 d9 00 00 40 da 00 00 40 cb 00 00 40 9c 00 00 40 7a 00 00 41 30 00 00 40 bf 00 00 40 a9 00 00 40 86 00 00 40 6d 00 00 40 5b 00 00 41 3e 00 00 40 ad 00 00 40 83 00 00 40 62 00 00 40 51 00 00 40 47 00 00 41 3c 00 00 40 a8 00 00 40 7a 00 00 40 5d 00 00 40 4a 00 00 40 42 00 00 41 29 00 00 40 a5 00 00 40 75 00 00 40 5b 00 00 40 47 00 00 40 3f 00 00 41 1f 00 00 40 a2 00 00 40 74 00 00 40 5d 00 00 40 49 00 00 40 40 00 00 41 1f 00 00 40 9d 00 00 40 77 00 00 40 63 00 00 40 4f 00 00 40 43 00 00 41 20 00 00 40 9a 00 00 40 7a 00 00 40 6a 00 00 40 56 00 00 40 47 00 00 41 20 00 00 40 9b 00 00 40 7f 00 00 40 71 00 00 40 60 00 00 40 50 00 00 41 20 00 00 40 9c 00 00 40 83 00 00 40 78 00 00 40 69 00 00 40 5a 00 00 41 20 00 00 40 9e 00 00 40 85 00 00 40 81 00 00 40 73 00 00 40 62 00 00 41 24 00 00 40 9f 00 00 40 87 00 00 40 8a 00 00 40 7a 00 00 40 69 00 00 41 2b 00 00 40 a1 00 00 40 88 00 00 40 8f 00 00 40 79 00 00 40 68 00 00 41 31 00 00 40 aa 00 00 40 8c 00 00 40 92 00 00 40 73 00 00 40 62 00 00 41 38 00 00 40 b9 00 00 40 93 00 00 40 92 00 00 40 6a 00 00 40 5a 00 00 41 3e 00 00 40 cf 00 00 40 9b 00 00 40 83 00 00 40 59 00 00 40 4d 00 00 41 47 00 00 40 ef 00 00 40 a6 00 00 40 73 00 00 40 4d 00 00 40 42 00 00 41 4d 00 00 40 fc 00 00 40 ab 00 00 40 6f 00 00 40 4d 00 00 40 40 00 00 41 4b 00 00 40 fd 00 00 40 a9 00 00 40 6d 00 00 40 4d 00 00 40 3f 00 00 41 49 00 00 40 fd 00 00 40 a5 00 00 40 6d 00 00 40 4c 00 00 40 40 00 00 41 4b 00 00 40 fa 00 00 40 9d 00 00 40 6c 00 00 40 4c 00 00 40 41 00 00 41 4b 00 00 40 f7 00 00 40 b0 00 00 40 62 00 00 40 46 00 00 40 3d 00 00 41 40 00 00 40 e3 00 00 40 a3 00 00 40 56 00 00 40 3b 00 00 40 31 00 00 40 16 00 00 40 f1 00 00 40 ac 00 00 40 62 00 00 40 45 00 00 40 40 00 00 52 92 00 00 40 ed 00 00 40 bf 00 00 40 6f 00 00 40 4e 00 00 40 44 00 00 55 46 00 00 40 2f 00 00 40 dd 00 00 40 80 00 00 40 53 00 00 40 43 00 00 63 b3 00 00 55 c9 00 00 41 0a 00 00 40 9a 00 00 40 60 00 00 40 5b 00 00 45 29 00 00 43 ef 00 00 41 25 00 00 40 97 00 00 40 53 00 00 40 57 00 00 52 1a 00 00 45 a7 00 00 51 24 00 00 40 9a 00 00 40 45 00 00 40 3e 00 00 5e 22 00 00 50 1c 00 00 42 ac 00 00 40 d8 00 00 40 48 00 00 40 41 00 00 41 07 00 00 67 dc 00 00 44 56 00 00 41 fc 00 00 40 55 00 00 40 4c 00 00 42 02 00 00 aa 02 00 00 4c 8e 00 00 4c 76 00 00 40 7a 00 00 40 75 00 00 42 02 00 00 aa 02 00 00 4c 8e 00 00 4c 76 00 00 40 7a 00 00 40 75 00 00 42 02 00 00 aa 02 00 00 4c 8e 00 00 4c 76 00 00 40 7a 00 00 40 75];
+			};
+
+			qcom,pc-temp-y5-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 36 f1 00 00 45 1c 00 00 51 bb 00 00 50 dc 00 00 55 f5 00 00 5a 68 00 00 3a 78 00 00 46 7d 00 00 52 50 00 00 53 14 00 00 52 4f 00 00 55 e2 00 00 3e 5b 00 00 49 25 00 00 52 6f 00 00 54 08 00 00 4c d8 00 00 50 4a 00 00 42 17 00 00 4c 21 00 00 52 31 00 00 53 ed 00 00 47 17 00 00 4a ef 00 00 45 2c 00 00 4e 7b 00 00 51 b2 00 00 52 fc 00 00 42 94 00 00 47 1e 00 00 47 1b 00 00 4f 45 00 00 51 0a 00 00 50 fc 00 00 40 bc 00 00 46 1c 00 00 48 56 00 00 4f 36 00 00 50 37 00 00 47 6c 00 00 40 20 00 00 47 28 00 00 49 11 00 00 4f 11 00 00 4e fe 00 00 3f 3e 00 00 3f dc 00 00 48 25 00 00 48 e1 00 00 4d f8 00 00 4c 4c 00 00 3f 98 00 00 43 93 00 00 47 6b 00 00 48 11 00 00 4a d2 00 00 47 8e 00 00 40 b3 00 00 4b 01 00 00 45 6d 00 00 47 bb 00 00 47 f6 00 00 44 2e 00 00 40 a0 00 00 4c 35 00 00 43 79 00 00 48 17 00 00 45 45 00 00 42 1f 00 00 3e a1 00 00 49 4e 00 00 41 35 00 00 48 d8 00 00 43 74 00 00 40 81 00 00 3c 70 00 00 45 e6 00 00 40 29 00 00 4b 08 00 00 42 f2 00 00 3f 29 00 00 3a 40 00 00 42 03 00 00 44 12 00 00 4f 6e 00 00 42 a9 00 00 3e 09 00 00 38 9e 00 00 3e f8 00 00 49 10 00 00 52 ad 00 00 43 46 00 00 3c f9 00 00 38 79 00 00 3f 86 00 00 48 7a 00 00 55 25 00 00 48 32 00 00 3b d5 00 00 38 74 00 00 41 c0 00 00 44 97 00 00 56 84 00 00 4e 2e 00 00 3b 4a 00 00 38 79 00 00 42 36 00 00 40 bb 00 00 56 96 00 00 54 46 00 00 3e f1 00 00 38 d0 00 00 3f 20 00 00 3c 7a 00 00 56 9e 00 00 59 ce 00 00 46 63 00 00 39 87 00 00 3c b2 00 00 39 ed 00 00 56 90 00 00 5b e7 00 00 4e 77 00 00 40 ef 00 00 3e b9 00 00 3e 75 00 00 55 fb 00 00 5d 07 00 00 58 90 00 00 4d 74 00 00 43 25 00 00 46 eb 00 00 54 d7 00 00 5d 47 00 00 5c 94 00 00 53 5f 00 00 47 2e 00 00 49 55 00 00 4a e9 00 00 59 a1 00 00 59 8e 00 00 56 fd 00 00 4b 7f 00 00 49 fc 00 00 3b 91 00 00 55 1b 00 00 56 26 00 00 57 c8 00 00 4d 23 00 00 4a 29 00 00 36 e5 00 00 53 ce 00 00 56 51 00 00 4e fa 00 00 4c e0 00 00 49 20 00 00 35 84 00 00 53 25 00 00 57 87 00 00 46 1d 00 00 4c 4c 00 00 47 f1 00 00 34 7d 00 00 52 d1 00 00 57 c7 00 00 47 40 00 00 4a 2e 00 00 48 34 00 00 33 53 00 00 52 b2 00 00 55 6a 00 00 4a d3 00 00 46 05 00 00 49 22 00 00 32 7f 00 00 52 87 00 00 53 57 00 00 4c 75 00 00 43 d4 00 00 48 d9 00 00 32 ab 00 00 4c 5c 00 00 55 2c 00 00 4c ff 00 00 42 b1 00 00 43 23 00 00 33 b9 00 00 40 8b 00 00 58 f4 00 00 4d 92 00 00 42 3c 00 00 3e ce 00 00 34 99 00 00 3e 5d 00 00 5a 01 00 00 4e 7c 00 00 44 55 00 00 40 be 00 00 35 18 00 00 42 94 00 00 5a 1e 00 00 4f 97 00 00 48 31 00 00 44 e1 00 00 35 81 00 00 47 97 00 00 5a 27 00 00 50 ff 00 00 4b 3f 00 00 48 c6 00 00 35 e2 00 00 4c d7 00 00 58 c6 00 00 52 b2 00 00 4e 20 00 00 4d 0d 00 00 36 3b 00 00 51 43 00 00 56 97 00 00 53 3a 00 00 4e ea 00 00 4e a2 00 00 36 8d 00 00 4e f2 00 00 55 e3 00 00 52 ee 00 00 4c 8c 00 00 4d fd 00 00 36 e1 00 00 43 63 00 00 55 aa 00 00 52 49 00 00 49 53 00 00 4d 55 00 00 37 24 00 00 3c 2d 00 00 55 36 00 00 4c 95 00 00 46 79 00 00 4d ad 00 00 37 51 00 00 3a 16 00 00 53 02 00 00 46 53 00 00 44 9e 00 00 4e 43 00 00 37 6a 00 00 39 81 00 00 4f c0 00 00 47 19 00 00 46 7e 00 00 46 57 00 00 35 06 00 00 39 e7 00 00 4b 70 00 00 46 27 00 00 46 2b 00 00 42 11 00 00 33 ca 00 00 35 f3 00 00 3c 02 00 00 45 16 00 00 48 ba 00 00 47 f2 00 00 32 bf 00 00 35 5a 00 00 38 78 00 00 44 4c 00 00 45 2f 00 00 4e d5 00 00 ff ff 00 00 34 e6 00 00 39 ae 00 00 49 e5 00 00 4b 1f 00 00 42 63 00 00 38 ba 00 00 38 01 00 00 37 ed 00 00 48 8e 00 00 43 e2 00 00 44 0b 00 00 25 02 00 00 ff ff 00 00 36 f3 00 00 47 15 00 00 43 b0 00 00 52 8b 00 00 26 d7 00 00 e9 bb 00 00 35 9d 00 00 49 0f 00 00 51 9c 00 00 51 83 00 00 27 02 00 00 2e a5 00 00 43 d2 00 00 4c 91 00 00 58 c5 00 00 50 8d 00 00 24 1a 00 00 27 16 00 00 27 9f 00 00 4a 88 00 00 54 ea 00 00 53 e3 00 00 26 54 00 00 24 63 00 00 36 4b 00 00 44 89 00 00 54 8c 00 00 63 23 00 00 5b 57 00 00 23 94 00 00 2b 13 00 00 34 c1 00 00 62 8a 00 00 6b 13 00 00 49 ee 00 00 22 f1 00 00 25 3f 00 00 2a 80 00 00 62 9c 00 00 67 98 00 00 49 ee 00 00 22 f1 00 00 25 3f 00 00 2a 80 00 00 62 9c 00 00 67 98 00 00 49 ee 00 00 22 f1 00 00 25 3f 00 00 2a 80 00 00 62 9c 00 00 67 98];
+			};
+
+			qcom,pc-temp-y6-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 15 a4 00 00 14 5b 00 00 13 dd 00 00 13 7a 00 00 13 58 00 00 13 51 00 00 15 ab 00 00 14 66 00 00 13 de 00 00 13 79 00 00 13 57 00 00 13 50 00 00 15 b0 00 00 14 6d 00 00 13 df 00 00 13 77 00 00 13 56 00 00 13 4f 00 00 15 b2 00 00 14 71 00 00 13 df 00 00 13 76 00 00 13 55 00 00 13 4e 00 00 15 b3 00 00 14 72 00 00 13 de 00 00 13 75 00 00 13 54 00 00 13 4e 00 00 15 b3 00 00 14 72 00 00 13 dd 00 00 13 75 00 00 13 54 00 00 13 4e 00 00 15 b0 00 00 14 6f 00 00 13 db 00 00 13 74 00 00 13 54 00 00 13 4e 00 00 15 a9 00 00 14 69 00 00 13 d7 00 00 13 74 00 00 13 55 00 00 13 4f 00 00 15 a3 00 00 14 64 00 00 13 d4 00 00 13 74 00 00 13 55 00 00 13 4f 00 00 15 9c 00 00 14 60 00 00 13 d0 00 00 13 74 00 00 13 55 00 00 13 50 00 00 15 98 00 00 14 5d 00 00 13 ce 00 00 13 75 00 00 13 56 00 00 13 50 00 00 15 96 00 00 14 59 00 00 13 cc 00 00 13 75 00 00 13 57 00 00 13 51 00 00 15 95 00 00 14 56 00 00 13 cb 00 00 13 77 00 00 13 58 00 00 13 52 00 00 15 96 00 00 14 56 00 00 13 cc 00 00 13 78 00 00 13 59 00 00 13 53 00 00 15 99 00 00 14 58 00 00 13 cd 00 00 13 79 00 00 13 5b 00 00 13 54 00 00 15 9b 00 00 14 5b 00 00 13 d0 00 00 13 7c 00 00 13 5c 00 00 13 55 00 00 15 99 00 00 14 64 00 00 13 d3 00 00 13 7f 00 00 13 5e 00 00 13 56 00 00 15 96 00 00 14 6d 00 00 13 d8 00 00 13 83 00 00 13 61 00 00 13 58 00 00 15 8e 00 00 14 6e 00 00 13 e1 00 00 13 89 00 00 13 63 00 00 13 5a 00 00 15 7b 00 00 14 6e 00 00 13 eb 00 00 13 8f 00 00 13 66 00 00 13 5d 00 00 15 6b 00 00 14 6d 00 00 13 ea 00 00 13 93 00 00 13 6a 00 00 13 60 00 00 15 5f 00 00 14 59 00 00 13 de 00 00 13 96 00 00 13 71 00 00 13 66 00 00 15 54 00 00 14 3f 00 00 13 d1 00 00 13 96 00 00 13 74 00 00 13 68 00 00 15 4a 00 00 14 35 00 00 13 c2 00 00 13 86 00 00 13 68 00 00 13 5f 00 00 15 40 00 00 14 2e 00 00 13 b7 00 00 13 74 00 00 13 5a 00 00 13 54 00 00 15 3c 00 00 14 2c 00 00 13 b4 00 00 13 72 00 00 13 58 00 00 13 52 00 00 15 3f 00 00 14 2b 00 00 13 b3 00 00 13 71 00 00 13 57 00 00 13 52 00 00 15 43 00 00 14 2b 00 00 13 b3 00 00 13 71 00 00 13 57 00 00 13 52 00 00 15 4a 00 00 14 2b 00 00 13 b4 00 00 13 72 00 00 13 58 00 00 13 53 00 00 15 57 00 00 14 2c 00 00 13 b6 00 00 13 73 00 00 13 59 00 00 13 54 00 00 15 66 00 00 14 2d 00 00 13 b7 00 00 13 75 00 00 13 5a 00 00 13 55 00 00 15 78 00 00 14 2e 00 00 13 b9 00 00 13 78 00 00 13 5c 00 00 13 56 00 00 15 8c 00 00 14 30 00 00 13 bb 00 00 13 7b 00 00 13 5e 00 00 13 57 00 00 15 a1 00 00 14 35 00 00 13 bc 00 00 13 7d 00 00 13 61 00 00 13 5a 00 00 15 b8 00 00 14 42 00 00 13 be 00 00 13 7e 00 00 13 62 00 00 13 5b 00 00 15 d2 00 00 14 4f 00 00 13 c0 00 00 13 7e 00 00 13 61 00 00 13 59 00 00 15 f1 00 00 14 5d 00 00 13 c3 00 00 13 7e 00 00 13 5e 00 00 13 56 00 00 16 13 00 00 14 6e 00 00 13 c7 00 00 13 7c 00 00 13 5c 00 00 13 54 00 00 16 3b 00 00 14 80 00 00 13 cb 00 00 13 77 00 00 13 59 00 00 13 53 00 00 16 67 00 00 14 93 00 00 13 cf 00 00 13 75 00 00 13 58 00 00 13 53 00 00 16 97 00 00 14 a7 00 00 13 d5 00 00 13 76 00 00 13 59 00 00 13 54 00 00 16 cb 00 00 14 bb 00 00 13 dd 00 00 13 77 00 00 13 5a 00 00 13 55 00 00 17 0a 00 00 14 d5 00 00 13 e9 00 00 13 78 00 00 13 59 00 00 13 54 00 00 17 5c 00 00 14 f9 00 00 13 f4 00 00 13 78 00 00 13 59 00 00 13 53 00 00 17 d1 00 00 15 2b 00 00 13 f5 00 00 13 75 00 00 13 56 00 00 13 51 00 00 18 67 00 00 15 62 00 00 14 13 00 00 13 7c 00 00 13 5a 00 00 13 54 00 00 18 e4 00 00 15 9d 00 00 14 2b 00 00 13 80 00 00 13 5c 00 00 13 56 00 00 19 75 00 00 15 ea 00 00 14 4f 00 00 13 88 00 00 13 61 00 00 13 5c 00 00 1a 44 00 00 16 56 00 00 14 88 00 00 13 91 00 00 13 6e 00 00 13 69 00 00 1b f5 00 00 16 ff 00 00 14 ce 00 00 13 90 00 00 13 65 00 00 13 60 00 00 21 ad 00 00 18 23 00 00 15 45 00 00 13 8d 00 00 13 5f 00 00 13 5a 00 00 2d cd 00 00 19 70 00 00 16 a5 00 00 13 97 00 00 13 63 00 00 13 5d 00 00 56 94 00 00 1e d0 00 00 19 0a 00 00 13 a9 00 00 13 67 00 00 13 61 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75];
+			};
+		};
+
+		qcom,6691316_LC_M335_NVT_5000mAH_PM7250B {
+			qcom,max-voltage-uv = <4500000>;
+			qcom,fg-cc-cv-threshold-uv = <4500000>;
+			qcom,fastchg-current-ma = <6000>;
+			qcom,batt-id-kohm = <100>;
+			qcom,battery-beta = <3380>;
+			qcom,battery-therm-kohm = <10>;
+			qcom,battery-type = "qbg-battery-profile-nvt-5000mAh";
+			qcom,qg-batt-profile-ver = <100>;
+			qcom,jeita-fcc-ranges = <0xffffff9c 0 400000 0 50 850000 50 100
+			                         2300000 100 150 3700000 150 350 6000000 350
+			                         480 6000000 480 560 2300000>;
+			qcom,jeita-fv-ranges = <0xffffff9c 0 4460000 0 50 4480000 50 100
+			                        4480000 100 150 4480000 150 350 4450000 350
+			                        480 4450000 480 560 4100000>;
+			qcom,step-chg-ranges = <3600000 4250000 6000000 4250001 4480000 5400000 4480001 4500000
+			                        3920000>;
+			qcom,vbat-avg-based-step-chg;
+			qcom,taper-fcc;
+			qcom,jeita-soft-thresholds = <9556 3725>;
+			qcom,jeita-hard-thresholds = <17365 2971>;
+			qcom,jeita-soft-hys-thresholds = <8799 4060>;
+			qcom,jeita-soft-fcc-ua = <5400000 2500000>;
+			qcom,jeita-soft-fv-uv = <4480000 4100000>;
+
+			qcom,fcc1-temp-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-data = [00 00 13 56 00 00 13 dc 00 00 14 15 00 00 14 32 00 00 14 3c];
+			};
+
+			qcom,fcc2-temp-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-data = [00 00 13 b8 00 00 13 b8 00 00 14 0e 00 00 14 2a 00 00 14 1b 00 00 14 12];
+			};
+
+			qcom,pc-temp-v1-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 ae ce 00 00 af 67 00 00 af a6 00 00 af c5 00 00 af c9 00 00 ad b2 00 00 ad e1 00 00 ae 0c 00 00 ae 1d 00 00 ae 22 00 00 ac b0 00 00 ac e7 00 00 ac eb 00 00 ac e9 00 00 ac f2 00 00 ab d3 00 00 ac 14 00 00 ac 0c 00 00 ab fd 00 00 ac 03 00 00 ab 06 00 00 ab 38 00 00 ab 33 00 00 ab 23 00 00 ab 26 00 00 aa 2b 00 00 aa 61 00 00 aa 57 00 00 aa 47 00 00 aa 48 00 00 a9 44 00 00 a9 80 00 00 a9 78 00 00 a9 6e 00 00 a9 6e 00 00 a8 56 00 00 a8 90 00 00 a8 8c 00 00 a8 86 00 00 a8 89 00 00 a7 60 00 00 a7 97 00 00 a7 94 00 00 a7 90 00 00 a7 99 00 00 a6 65 00 00 a6 9d 00 00 a6 9a 00 00 a6 96 00 00 a6 a2 00 00 a5 6d 00 00 a5 9f 00 00 a5 9d 00 00 a5 9b 00 00 a5 a8 00 00 a4 78 00 00 a4 a4 00 00 a4 a0 00 00 a4 a0 00 00 a4 ad 00 00 a3 86 00 00 a3 ac 00 00 a3 a5 00 00 a3 a6 00 00 a3 b5 00 00 a2 9d 00 00 a2 b9 00 00 a2 ad 00 00 a2 ae 00 00 a2 bf 00 00 a1 bb 00 00 a1 cf 00 00 a1 bf 00 00 a1 bd 00 00 a1 cf 00 00 a0 de 00 00 a0 eb 00 00 a0 d7 00 00 a0 d4 00 00 a0 e4 00 00 a0 07 00 00 a0 0f 00 00 9f f7 00 00 9f f1 00 00 9f ff 00 00 9f 37 00 00 9f 3b 00 00 9f 1f 00 00 9f 17 00 00 9f 23 00 00 9e 70 00 00 9e 6f 00 00 9e 4f 00 00 9e 44 00 00 9e 4f 00 00 9d b0 00 00 9d b1 00 00 9d 8b 00 00 9d 7b 00 00 9d 84 00 00 9c f5 00 00 9c fa 00 00 9c d5 00 00 9c c3 00 00 9c ca 00 00 9c 45 00 00 9c 34 00 00 9c 0f 00 00 9b ff 00 00 9c 07 00 00 9b 8c 00 00 9b 5c 00 00 9b 1e 00 00 9b 17 00 00 9b 24 00 00 9a 9c 00 00 9a 7f 00 00 9a 2b 00 00 9a 25 00 00 9a 35 00 00 99 83 00 00 99 97 00 00 99 61 00 00 99 57 00 00 99 66 00 00 98 b3 00 00 98 b6 00 00 98 b0 00 00 98 9e 00 00 98 ab 00 00 98 29 00 00 98 1f 00 00 98 1d 00 00 98 03 00 00 98 0c 00 00 97 bb 00 00 97 ba 00 00 97 a3 00 00 97 83 00 00 97 87 00 00 97 5d 00 00 97 5b 00 00 97 36 00 00 97 13 00 00 97 13 00 00 97 0c 00 00 96 f5 00 00 96 ce 00 00 96 a9 00 00 96 a5 00 00 96 c1 00 00 96 94 00 00 96 6e 00 00 96 49 00 00 96 40 00 00 96 76 00 00 96 3f 00 00 96 1a 00 00 95 ef 00 00 95 e4 00 00 96 30 00 00 95 f5 00 00 95 d0 00 00 95 9d 00 00 95 91 00 00 95 ee 00 00 95 b2 00 00 95 8c 00 00 95 52 00 00 95 43 00 00 95 b1 00 00 95 78 00 00 95 4e 00 00 95 10 00 00 94 fc 00 00 95 7a 00 00 95 43 00 00 95 15 00 00 94 d3 00 00 94 b9 00 00 95 4e 00 00 95 12 00 00 94 dd 00 00 94 91 00 00 94 6c 00 00 95 23 00 00 94 e5 00 00 94 aa 00 00 94 4c 00 00 94 16 00 00 94 ec 00 00 94 aa 00 00 94 6b 00 00 93 fe 00 00 93 ba 00 00 94 a8 00 00 94 53 00 00 94 13 00 00 93 a2 00 00 93 5b 00 00 94 54 00 00 93 e8 00 00 93 a8 00 00 93 39 00 00 92 f2 00 00 93 da 00 00 93 70 00 00 93 2f 00 00 92 bf 00 00 92 76 00 00 93 49 00 00 92 e1 00 00 92 a1 00 00 92 30 00 00 91 e5 00 00 92 a6 00 00 92 33 00 00 91 f6 00 00 91 8c 00 00 91 46 00 00 92 09 00 00 91 8a 00 00 91 55 00 00 90 f7 00 00 90 b7 00 00 91 72 00 00 91 12 00 00 90 ef 00 00 90 9f 00 00 90 63 00 00 91 35 00 00 90 ed 00 00 90 d3 00 00 90 88 00 00 90 4d 00 00 91 09 00 00 90 d5 00 00 90 be 00 00 90 79 00 00 90 3d 00 00 90 e0 00 00 90 bc 00 00 90 a5 00 00 90 61 00 00 90 23 00 00 90 b7 00 00 90 7a 00 00 90 56 00 00 8f de 00 00 8f 8a 00 00 90 7d 00 00 8f 62 00 00 8f 32 00 00 8e 81 00 00 8e 25 00 00 8f 9e 00 00 8d 7f 00 00 8d 64 00 00 8c 99 00 00 8c 3d 00 00 8d bb 00 00 8a fd 00 00 8b 08 00 00 8a 22 00 00 89 c4 00 00 8a af 00 00 87 6a 00 00 87 cd 00 00 86 b7 00 00 86 60 00 00 80 47 00 00 81 76 00 00 82 c3 00 00 81 4e 00 00 80 f7 00 00 75 30 00 00 75 30 00 00 75 30 00 00 75 30 00 00 75 30];
+			};
+
+			qcom,pc-temp-v2-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 af cd 00 00 af be 00 00 af aa 00 00 af 7d 00 00 af 64 00 00 af 50 00 00 ad d1 00 00 ad ee 00 00 ad ee 00 00 ad f3 00 00 ad d3 00 00 ad c1 00 00 ac 2e 00 00 ac 6f 00 00 ac 7f 00 00 ac a5 00 00 ac 7e 00 00 ac 6e 00 00 aa ff 00 00 ab 59 00 00 ab 72 00 00 ab a2 00 00 ab 72 00 00 ab 61 00 00 aa 20 00 00 aa 8e 00 00 aa a9 00 00 aa d6 00 00 aa 9f 00 00 aa 8d 00 00 a9 49 00 00 a9 c4 00 00 a9 dd 00 00 aa 07 00 00 a9 ca 00 00 a9 b7 00 00 a8 5f 00 00 a8 e0 00 00 a8 f9 00 00 a9 25 00 00 a8 e5 00 00 a8 d2 00 00 a7 73 00 00 a7 f4 00 00 a8 0d 00 00 a8 3c 00 00 a7 fa 00 00 a7 e9 00 00 a6 81 00 00 a7 02 00 00 a7 19 00 00 a7 49 00 00 a7 07 00 00 a6 f7 00 00 a5 87 00 00 a6 08 00 00 a6 1b 00 00 a6 4c 00 00 a6 0b 00 00 a5 fc 00 00 a4 8e 00 00 a5 0f 00 00 a5 1d 00 00 a5 4f 00 00 a5 10 00 00 a5 02 00 00 a3 95 00 00 a4 16 00 00 a4 20 00 00 a4 52 00 00 a4 14 00 00 a4 08 00 00 a2 9f 00 00 a3 1e 00 00 a3 26 00 00 a3 56 00 00 a3 1b 00 00 a3 10 00 00 a1 ba 00 00 a2 2c 00 00 a2 31 00 00 a2 5f 00 00 a2 27 00 00 a2 1d 00 00 a0 e2 00 00 a1 3e 00 00 a1 42 00 00 a1 6c 00 00 a1 37 00 00 a1 2e 00 00 a0 05 00 00 a0 5a 00 00 a0 59 00 00 a0 81 00 00 a0 4f 00 00 a0 46 00 00 9f 20 00 00 9f 86 00 00 9f 74 00 00 9f 9d 00 00 9f 6e 00 00 9f 64 00 00 9e 31 00 00 9e b7 00 00 9e 98 00 00 9e c0 00 00 9e 94 00 00 9e 8b 00 00 9d 2e 00 00 9d e5 00 00 9d cc 00 00 9d ef 00 00 9d c4 00 00 9d bd 00 00 9c 18 00 00 9d 10 00 00 9d 03 00 00 9d 20 00 00 9c f8 00 00 9c f5 00 00 9b 12 00 00 9c 26 00 00 9c 1d 00 00 9c 4b 00 00 9c 30 00 00 9c 2f 00 00 9a 21 00 00 9b 0b 00 00 9b 15 00 00 9b 72 00 00 9b 6b 00 00 9b 6d 00 00 99 3f 00 00 99 f2 00 00 9a 19 00 00 9a 8d 00 00 9a 97 00 00 9a 9c 00 00 98 65 00 00 99 14 00 00 99 2e 00 00 99 86 00 00 99 91 00 00 99 9a 00 00 97 96 00 00 98 52 00 00 98 59 00 00 98 93 00 00 98 97 00 00 98 9f 00 00 96 e6 00 00 97 a8 00 00 97 ac 00 00 97 e6 00 00 97 ea 00 00 97 f2 00 00 96 50 00 00 97 12 00 00 97 1c 00 00 97 5a 00 00 97 62 00 00 97 6b 00 00 95 d1 00 00 96 89 00 00 96 99 00 00 96 da 00 00 96 e6 00 00 96 ef 00 00 95 6d 00 00 96 0a 00 00 96 21 00 00 96 63 00 00 96 74 00 00 96 7c 00 00 95 19 00 00 95 96 00 00 95 b3 00 00 95 f7 00 00 96 0b 00 00 96 12 00 00 94 ce 00 00 95 2b 00 00 95 4e 00 00 95 96 00 00 95 ac 00 00 95 b1 00 00 94 8a 00 00 94 c5 00 00 94 f0 00 00 95 3d 00 00 95 54 00 00 95 56 00 00 94 4b 00 00 94 6d 00 00 94 9a 00 00 94 e9 00 00 95 03 00 00 95 03 00 00 94 0d 00 00 94 2c 00 00 94 4a 00 00 94 99 00 00 94 b9 00 00 94 ba 00 00 93 d1 00 00 93 f8 00 00 94 01 00 00 94 49 00 00 94 6a 00 00 94 69 00 00 93 90 00 00 93 c6 00 00 93 c1 00 00 93 fb 00 00 94 0a 00 00 93 fb 00 00 93 4a 00 00 93 97 00 00 93 85 00 00 93 ab 00 00 93 a2 00 00 93 7b 00 00 92 ff 00 00 93 65 00 00 93 45 00 00 93 4f 00 00 93 37 00 00 93 05 00 00 92 ac 00 00 93 26 00 00 92 ff 00 00 92 ea 00 00 92 c8 00 00 92 95 00 00 92 51 00 00 92 dc 00 00 92 af 00 00 92 87 00 00 92 5e 00 00 92 2a 00 00 91 ec 00 00 92 7c 00 00 92 49 00 00 92 2b 00 00 92 04 00 00 91 cd 00 00 91 7a 00 00 91 f8 00 00 91 d1 00 00 91 c0 00 00 91 9e 00 00 91 68 00 00 91 00 00 00 91 66 00 00 91 42 00 00 91 3a 00 00 91 1c 00 00 90 e5 00 00 90 81 00 00 90 c7 00 00 90 9d 00 00 90 9d 00 00 90 84 00 00 90 4a 00 00 90 15 00 00 90 33 00 00 90 12 00 00 90 28 00 00 90 15 00 00 8f e1 00 00 8f ac 00 00 8f c1 00 00 8f c5 00 00 90 06 00 00 8f f9 00 00 8f c5 00 00 8f 79 00 00 8f 8e 00 00 8f 9e 00 00 8f ef 00 00 8f e5 00 00 8f b1 00 00 8f 42 00 00 8f 5f 00 00 8f 6b 00 00 8f cd 00 00 8f cd 00 00 8f 97 00 00 8f 34 00 00 8f 2b 00 00 8f 26 00 00 8f 7b 00 00 8f 97 00 00 8f 5a 00 00 8e d3 00 00 8e ed 00 00 8e 68 00 00 8e 77 00 00 8e b3 00 00 8e 6d 00 00 90 35 00 00 8e 84 00 00 8c e0 00 00 8c a0 00 00 8d 00 00 00 8c b1 00 00 8e ed 00 00 8d aa 00 00 8a 8f 00 00 8a 3c 00 00 8a cc 00 00 8a 7e 00 00 91 23 00 00 8d b4 00 00 87 81 00 00 87 0b 00 00 87 d5 00 00 87 8c 00 00 7a 6a 00 00 8b ff 00 00 84 a3 00 00 82 47 00 00 83 a5 00 00 83 77 00 00 76 38 00 00 77 c9 00 00 7e f6 00 00 7b e9 00 00 7d 77 00 00 7d 66 00 00 72 44 00 00 72 8c 00 00 6d d8 00 00 71 d6 00 00 6d 9a 00 00 6d a1];
+			};
+
+			qcom,pc-temp-z1-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 2d d3 00 00 2b d1 00 00 2a 3e 00 00 29 82 00 00 29 68 00 00 2d e1 00 00 2c 0a 00 00 2a 58 00 00 29 a5 00 00 29 88 00 00 2d ea 00 00 2b fa 00 00 2a 57 00 00 29 9e 00 00 29 85 00 00 2d ed 00 00 2b e4 00 00 2a 4d 00 00 29 99 00 00 29 84 00 00 2d ef 00 00 2b e0 00 00 2a 44 00 00 29 97 00 00 29 83 00 00 2d ef 00 00 2b e0 00 00 2a 3d 00 00 29 97 00 00 29 84 00 00 2d e6 00 00 2b df 00 00 2a 38 00 00 29 98 00 00 29 86 00 00 2d d8 00 00 2b d3 00 00 2a 35 00 00 29 99 00 00 29 89 00 00 2d c0 00 00 2b c3 00 00 2a 34 00 00 29 9b 00 00 29 8c 00 00 2d 9e 00 00 2b bd 00 00 2a 33 00 00 29 9d 00 00 29 90 00 00 2d 8e 00 00 2b b9 00 00 2a 36 00 00 29 a0 00 00 29 94 00 00 2d 87 00 00 2b b7 00 00 2a 39 00 00 29 a4 00 00 29 99 00 00 2d 83 00 00 2b b9 00 00 2a 3e 00 00 29 a8 00 00 29 9d 00 00 2d 84 00 00 2b bb 00 00 2a 43 00 00 29 ad 00 00 29 a2 00 00 2d 85 00 00 2b c0 00 00 2a 49 00 00 29 b2 00 00 29 a6 00 00 2d 85 00 00 2b c7 00 00 2a 50 00 00 29 b7 00 00 29 ac 00 00 2d 84 00 00 2b cd 00 00 2a 58 00 00 29 bc 00 00 29 b2 00 00 2d 85 00 00 2b d2 00 00 2a 5d 00 00 29 c1 00 00 29 b7 00 00 2d 8a 00 00 2b d8 00 00 2a 62 00 00 29 c7 00 00 29 bc 00 00 2d 94 00 00 2b dd 00 00 2a 69 00 00 29 cc 00 00 29 c1 00 00 2d 9d 00 00 2b e5 00 00 2a 70 00 00 29 d2 00 00 29 c6 00 00 2d a4 00 00 2b ea 00 00 2a 77 00 00 29 d7 00 00 29 ca 00 00 2d ad 00 00 2b ef 00 00 2a 7b 00 00 29 db 00 00 29 cf 00 00 2d bb 00 00 2b f3 00 00 2a 7f 00 00 29 df 00 00 29 d3 00 00 2d cd 00 00 2b f5 00 00 2a 86 00 00 29 e3 00 00 29 d7 00 00 2d d3 00 00 2b f7 00 00 2a 8d 00 00 29 e8 00 00 29 da 00 00 2d cb 00 00 2b f9 00 00 2a 94 00 00 29 ec 00 00 29 de 00 00 2d c2 00 00 2b fd 00 00 2a 9a 00 00 29 f0 00 00 29 e2 00 00 2d c3 00 00 2c 01 00 00 2a 9f 00 00 29 f4 00 00 29 e5 00 00 2d c9 00 00 2c 0a 00 00 2a a4 00 00 29 f8 00 00 29 e8 00 00 2d ce 00 00 2c 16 00 00 2a a9 00 00 29 fc 00 00 29 ec 00 00 2d d6 00 00 2c 17 00 00 2a af 00 00 2a 00 00 00 29 ef 00 00 2d de 00 00 2c 13 00 00 2a b5 00 00 2a 03 00 00 29 f2 00 00 2d e0 00 00 2c 11 00 00 2a bb 00 00 2a 07 00 00 29 f4 00 00 2d de 00 00 2c 16 00 00 2a c0 00 00 2a 0b 00 00 29 f7 00 00 2d de 00 00 2c 1e 00 00 2a c5 00 00 2a 0f 00 00 29 fa 00 00 2d e7 00 00 2c 24 00 00 2a cb 00 00 2a 13 00 00 29 fd 00 00 2d f4 00 00 2c 29 00 00 2a d2 00 00 2a 17 00 00 2a 00 00 00 2d fe 00 00 2c 2f 00 00 2a d9 00 00 2a 1a 00 00 2a 02 00 00 2e 08 00 00 2c 38 00 00 2a df 00 00 2a 1c 00 00 2a 03 00 00 2e 0f 00 00 2c 41 00 00 2a e3 00 00 2a 1e 00 00 2a 05 00 00 2e 14 00 00 2c 47 00 00 2a e7 00 00 2a 21 00 00 2a 06 00 00 2e 17 00 00 2c 4d 00 00 2a e9 00 00 2a 23 00 00 2a 08 00 00 2e 20 00 00 2c 5e 00 00 2a f1 00 00 2a 26 00 00 2a 0a 00 00 2e 40 00 00 2c 66 00 00 2a f7 00 00 2a 29 00 00 2a 0b 00 00 2e 33 00 00 2c 63 00 00 2a f8 00 00 2a 2a 00 00 2a 0d 00 00 2e 3d 00 00 2c 6a 00 00 2b 00 00 00 2a 2a 00 00 2a 0d 00 00 2e 4c 00 00 2c 6d 00 00 2a fb 00 00 2a 2c 00 00 2a 0d 00 00 2e 3c 00 00 2c 64 00 00 2b 00 00 00 2a 2e 00 00 2a 0f 00 00 2e 4b 00 00 2c 64 00 00 2b 04 00 00 2a 30 00 00 2a 10 00 00 2e 42 00 00 2c 6e 00 00 2b 09 00 00 2a 33 00 00 2a 12 00 00 2e 53 00 00 2c 7e 00 00 2b 0e 00 00 2a 38 00 00 2a 15 00 00 2e 5f 00 00 2c 83 00 00 2b 18 00 00 2a 3c 00 00 2a 19 00 00 2e 58 00 00 2c aa 00 00 2b 22 00 00 2a 42 00 00 2a 1f 00 00 2e 58 00 00 2c aa 00 00 2b 22 00 00 2a 42 00 00 2a 1f 00 00 2e 58 00 00 2c aa 00 00 2b 22 00 00 2a 42 00 00 2a 1f];
+			};
+
+			qcom,pc-temp-z2-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 2a b2 00 00 28 7a 00 00 2a 66 00 00 2c 9f 00 00 2c de 00 00 29 d1 00 00 29 8f 00 00 2a fc 00 00 2b 6c 00 00 2c 7d 00 00 29 61 00 00 29 da 00 00 2b 56 00 00 2c 99 00 00 2c 84 00 00 29 5b 00 00 2a 09 00 00 2b 22 00 00 2c 7f 00 00 2c ed 00 00 29 4d 00 00 2a 05 00 00 2a f0 00 00 2c 60 00 00 2d 58 00 00 29 3c 00 00 29 da 00 00 2a c6 00 00 2c 3a 00 00 2d 46 00 00 29 1d 00 00 29 b3 00 00 2a aa 00 00 2c 0b 00 00 2d 01 00 00 28 ff 00 00 29 98 00 00 2a a9 00 00 2c 06 00 00 2c eb 00 00 28 eb 00 00 29 85 00 00 2a ad 00 00 2c 1d 00 00 2c e0 00 00 28 da 00 00 29 87 00 00 2a ac 00 00 2c 2a 00 00 2c d7 00 00 28 d6 00 00 29 94 00 00 2a 9f 00 00 2c 22 00 00 2c d8 00 00 28 dd 00 00 29 9f 00 00 2a 96 00 00 2c 13 00 00 2c dd 00 00 28 e6 00 00 29 a6 00 00 2a 99 00 00 2c 07 00 00 2c df 00 00 28 ee 00 00 29 ad 00 00 2a 9e 00 00 2b fc 00 00 2c e4 00 00 28 fc 00 00 29 b8 00 00 2a a2 00 00 2b f7 00 00 2c ef 00 00 29 08 00 00 29 c6 00 00 2a a4 00 00 2b f7 00 00 2d 1a 00 00 29 12 00 00 29 d1 00 00 2a a6 00 00 2b f8 00 00 2d 51 00 00 29 1c 00 00 29 da 00 00 2a aa 00 00 2b fd 00 00 2d 76 00 00 29 26 00 00 29 e0 00 00 2a af 00 00 2c 08 00 00 2d 9d 00 00 29 30 00 00 29 e3 00 00 2a a9 00 00 2c 13 00 00 2d ae 00 00 29 39 00 00 29 e9 00 00 2a 93 00 00 2c 21 00 00 2d bc 00 00 29 3f 00 00 29 f0 00 00 2a 8d 00 00 2c 39 00 00 2d c6 00 00 29 47 00 00 2a 00 00 00 2a c7 00 00 2c 8c 00 00 2e 20 00 00 29 54 00 00 2a 0a 00 00 2b 03 00 00 2d 00 00 00 2e af 00 00 29 67 00 00 29 f4 00 00 2b 01 00 00 2d 39 00 00 2e 9a 00 00 29 6e 00 00 29 cb 00 00 2a f0 00 00 2d 5f 00 00 2d ef 00 00 29 66 00 00 29 c8 00 00 2a ef 00 00 2d 68 00 00 2d 54 00 00 29 5f 00 00 29 e6 00 00 2b 13 00 00 2c bb 00 00 2c cb 00 00 29 5f 00 00 29 fb 00 00 2b 2f 00 00 2b e5 00 00 2c 62 00 00 29 62 00 00 29 fa 00 00 2b 0d 00 00 2b a7 00 00 2c 59 00 00 29 64 00 00 29 f9 00 00 2a cf 00 00 2b 7e 00 00 2c 5b 00 00 29 67 00 00 29 f8 00 00 2a bc 00 00 2b 76 00 00 2c 61 00 00 29 6a 00 00 29 f8 00 00 2a b9 00 00 2b 94 00 00 2c 8d 00 00 29 6b 00 00 29 f9 00 00 2a bb 00 00 2b bf 00 00 2c cc 00 00 29 6e 00 00 2a 03 00 00 2a ca 00 00 2b f4 00 00 2d 11 00 00 29 71 00 00 2a 11 00 00 2a e1 00 00 2c 2f 00 00 2d 5c 00 00 29 76 00 00 2a 16 00 00 2a f1 00 00 2c 4e 00 00 2d 90 00 00 29 7c 00 00 2a 18 00 00 2a ff 00 00 2c 69 00 00 2d ca 00 00 29 82 00 00 2a 1c 00 00 2b 11 00 00 2c 80 00 00 2d ea 00 00 29 8a 00 00 2a 2e 00 00 2b 2f 00 00 2c af 00 00 2d f6 00 00 29 8d 00 00 2a 3e 00 00 2b 48 00 00 2c e0 00 00 2e 01 00 00 29 82 00 00 2a 35 00 00 2b 37 00 00 2c d6 00 00 2d f4 00 00 29 7a 00 00 2a 1b 00 00 2b 0e 00 00 2c af 00 00 2d cd 00 00 29 7c 00 00 2a 16 00 00 2b 2d 00 00 2c a6 00 00 2d d6 00 00 29 41 00 00 2a 2d 00 00 2b 4d 00 00 2c bc 00 00 2d da 00 00 2a 04 00 00 2a 98 00 00 2b 2f 00 00 2c f2 00 00 2e 1a 00 00 32 f5 00 00 2a 7a 00 00 2b 05 00 00 2c c5 00 00 2e 50 00 00 29 f9 00 00 2a 9e 00 00 2a ee 00 00 2c ea 00 00 2e 6a 00 00 33 89 00 00 2b 02 00 00 2a e3 00 00 2d 17 00 00 2e ba 00 00 2f 1a 00 00 2a ea 00 00 2b 23 00 00 2c f3 00 00 2d 7d 00 00 31 66 00 00 2b 11 00 00 2b 22 00 00 2c 1f 00 00 2c 85 00 00 29 b3 00 00 2a fd 00 00 2a f2 00 00 2b bb 00 00 2c 33 00 00 28 29 00 00 2a aa 00 00 2a a4 00 00 2b 6e 00 00 2c 0d 00 00 29 0b 00 00 29 bc 00 00 2a 40 00 00 2b 10 00 00 2b d2 00 00 29 0b 00 00 29 bc 00 00 2a 40 00 00 2b 10 00 00 2b d2 00 00 29 0b 00 00 29 bc 00 00 2a 40 00 00 2b 10 00 00 2b d2];
+			};
+
+			qcom,pc-temp-z3-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 4b d2 00 00 4b 88 00 00 4b 83 00 00 4b 62 00 00 4b 62 00 00 4c 28 00 00 4b f5 00 00 4b aa 00 00 4b 7d 00 00 4b 77 00 00 4c 5a 00 00 4c 09 00 00 4b bf 00 00 4b 8e 00 00 4b 7a 00 00 4c 69 00 00 4c 12 00 00 4b c0 00 00 4b 92 00 00 4b 7d 00 00 4c 72 00 00 4c 14 00 00 4b c1 00 00 4b 93 00 00 4b 7e 00 00 4c 75 00 00 4c 15 00 00 4b c1 00 00 4b 90 00 00 4b 7d 00 00 4c 76 00 00 4c 14 00 00 4b c1 00 00 4b 8a 00 00 4b 7b 00 00 4c 76 00 00 4c 12 00 00 4b bf 00 00 4b 87 00 00 4b 79 00 00 4c 75 00 00 4c 10 00 00 4b b8 00 00 4b 87 00 00 4b 78 00 00 4c 72 00 00 4c 0b 00 00 4b b2 00 00 4b 86 00 00 4b 76 00 00 4c 6e 00 00 4c 02 00 00 4b ab 00 00 4b 82 00 00 4b 74 00 00 4c 68 00 00 4b fc 00 00 4b a7 00 00 4b 7c 00 00 4b 72 00 00 4c 62 00 00 4b f9 00 00 4b a6 00 00 4b 7b 00 00 4b 6f 00 00 4c 5a 00 00 4b f7 00 00 4b a5 00 00 4b 7a 00 00 4b 6d 00 00 4c 52 00 00 4b f3 00 00 4b a3 00 00 4b 79 00 00 4b 6a 00 00 4c 4d 00 00 4b f0 00 00 4b 9e 00 00 4b 75 00 00 4b 68 00 00 4c 4a 00 00 4b ed 00 00 4b 9a 00 00 4b 71 00 00 4b 66 00 00 4c 47 00 00 4b ea 00 00 4b 99 00 00 4b 70 00 00 4b 65 00 00 4c 44 00 00 4b e8 00 00 4b 98 00 00 4b 6f 00 00 4b 63 00 00 4c 40 00 00 4b e6 00 00 4b 97 00 00 4b 6f 00 00 4b 62 00 00 4c 3d 00 00 4b e3 00 00 4b 96 00 00 4b 6d 00 00 4b 61 00 00 4c 3b 00 00 4b e3 00 00 4b 95 00 00 4b 6c 00 00 4b 60 00 00 4c 3a 00 00 4b ea 00 00 4b 9c 00 00 4b 6f 00 00 4b 65 00 00 4c 3f 00 00 4b ef 00 00 4b a3 00 00 4b 77 00 00 4b 6e 00 00 4c 4c 00 00 4b ec 00 00 4b a0 00 00 4b 7e 00 00 4b 75 00 00 4c 51 00 00 4b e7 00 00 4b 95 00 00 4b 88 00 00 4b 7a 00 00 4c 4e 00 00 4b e5 00 00 4b 92 00 00 4b 8c 00 00 4b 7c 00 00 4c 4a 00 00 4b e5 00 00 4b a1 00 00 4b 8a 00 00 4b 7b 00 00 4c 48 00 00 4b e6 00 00 4b ae 00 00 4b 88 00 00 4b 79 00 00 4c 46 00 00 4b ec 00 00 4b af 00 00 4b 85 00 00 4b 77 00 00 4c 44 00 00 4b f3 00 00 4b af 00 00 4b 80 00 00 4b 74 00 00 4c 43 00 00 4b f3 00 00 4b ae 00 00 4b 7d 00 00 4b 70 00 00 4c 43 00 00 4b f1 00 00 4b a9 00 00 4b 7a 00 00 4b 6b 00 00 4c 43 00 00 4b ee 00 00 4b a5 00 00 4b 77 00 00 4b 66 00 00 4c 42 00 00 4b ec 00 00 4b a2 00 00 4b 73 00 00 4b 62 00 00 4c 41 00 00 4b ea 00 00 4b a1 00 00 4b 70 00 00 4b 5f 00 00 4c 40 00 00 4b e9 00 00 4b 9f 00 00 4b 70 00 00 4b 5f 00 00 4c 3e 00 00 4b e8 00 00 4b 9e 00 00 4b 70 00 00 4b 62 00 00 4c 3b 00 00 4b e7 00 00 4b 9d 00 00 4b 71 00 00 4b 64 00 00 4c 35 00 00 4b e4 00 00 4b 9a 00 00 4b 70 00 00 4b 66 00 00 4c 30 00 00 4b e0 00 00 4b 97 00 00 4b 70 00 00 4b 67 00 00 4c 2c 00 00 4b dd 00 00 4b 95 00 00 4b 70 00 00 4b 67 00 00 4c 28 00 00 4b da 00 00 4b 94 00 00 4b 71 00 00 4b 68 00 00 4c 21 00 00 4b d8 00 00 4b 94 00 00 4b 72 00 00 4b 69 00 00 4b 9b 00 00 4b d1 00 00 4b 93 00 00 4b 71 00 00 4b 68 00 00 4b 3d 00 00 4b c0 00 00 4b 89 00 00 4b 69 00 00 4b 5d 00 00 4b 3c 00 00 4b bf 00 00 4b 86 00 00 4b 69 00 00 4b 5b 00 00 4b 3d 00 00 4b b1 00 00 4b 85 00 00 4b 64 00 00 4b 5a 00 00 4b 3a 00 00 4b 92 00 00 4b 84 00 00 4b 61 00 00 4b 57 00 00 4b 3a 00 00 4b 9c 00 00 4b 82 00 00 4b 68 00 00 4b 64 00 00 4b 3b 00 00 4b 93 00 00 4b 85 00 00 4b 72 00 00 4b 68 00 00 4b 3d 00 00 4b 8a 00 00 4b 8b 00 00 4b 74 00 00 4b 68 00 00 4b 41 00 00 4b 85 00 00 4b 8e 00 00 4b 75 00 00 4b 6a 00 00 4c 14 00 00 4b c9 00 00 4b 91 00 00 4b 79 00 00 4b 6b 00 00 4c 14 00 00 4b c9 00 00 4b 91 00 00 4b 79 00 00 4b 6b 00 00 4c 14 00 00 4b c9 00 00 4b 91 00 00 4b 79 00 00 4b 6b];
+			};
+
+			qcom,pc-temp-z4-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 3d 25 00 00 3a d2 00 00 3a 21 00 00 39 b5 00 00 39 a6 00 00 3c e9 00 00 3c 09 00 00 39 f0 00 00 39 77 00 00 39 5e 00 00 3c 93 00 00 3b 90 00 00 3a 46 00 00 39 a8 00 00 39 7d 00 00 3c 02 00 00 3a c8 00 00 3a 05 00 00 39 95 00 00 39 73 00 00 3b 4a 00 00 3a 60 00 00 39 cd 00 00 39 7e 00 00 39 65 00 00 3a d1 00 00 3a 1d 00 00 39 aa 00 00 39 6f 00 00 39 5a 00 00 3a 81 00 00 39 eb 00 00 39 8e 00 00 39 63 00 00 39 51 00 00 3a 42 00 00 39 c5 00 00 39 7d 00 00 39 5a 00 00 39 4b 00 00 3a 10 00 00 39 a7 00 00 39 70 00 00 39 53 00 00 39 47 00 00 39 e8 00 00 39 93 00 00 39 67 00 00 39 4e 00 00 39 43 00 00 39 c7 00 00 39 83 00 00 39 62 00 00 39 4b 00 00 39 3f 00 00 39 a9 00 00 39 78 00 00 39 5e 00 00 39 48 00 00 39 3c 00 00 39 95 00 00 39 71 00 00 39 57 00 00 39 43 00 00 39 38 00 00 39 8c 00 00 39 6c 00 00 39 50 00 00 39 3c 00 00 39 35 00 00 39 87 00 00 39 67 00 00 39 4b 00 00 39 37 00 00 39 31 00 00 39 82 00 00 39 63 00 00 39 48 00 00 39 34 00 00 39 2d 00 00 39 7e 00 00 39 60 00 00 39 46 00 00 39 32 00 00 39 29 00 00 39 7a 00 00 39 5e 00 00 39 42 00 00 39 2d 00 00 39 24 00 00 39 78 00 00 39 5c 00 00 39 3e 00 00 39 28 00 00 39 20 00 00 39 77 00 00 39 5a 00 00 39 3c 00 00 39 25 00 00 39 1d 00 00 39 75 00 00 39 57 00 00 39 3b 00 00 39 24 00 00 39 1b 00 00 39 72 00 00 39 58 00 00 39 3b 00 00 39 24 00 00 39 19 00 00 39 70 00 00 39 63 00 00 39 52 00 00 39 39 00 00 39 29 00 00 39 86 00 00 39 75 00 00 39 75 00 00 39 58 00 00 39 43 00 00 39 c1 00 00 39 98 00 00 39 8d 00 00 39 5d 00 00 39 48 00 00 39 d9 00 00 39 c3 00 00 39 a2 00 00 39 5b 00 00 39 47 00 00 39 d7 00 00 39 c8 00 00 39 a6 00 00 39 59 00 00 39 46 00 00 39 d4 00 00 39 b2 00 00 39 8c 00 00 39 51 00 00 39 40 00 00 39 cc 00 00 39 9b 00 00 39 6f 00 00 39 47 00 00 39 38 00 00 39 bc 00 00 39 8b 00 00 39 63 00 00 39 41 00 00 39 33 00 00 39 ae 00 00 39 7f 00 00 39 5b 00 00 39 3c 00 00 39 2f 00 00 39 a5 00 00 39 7a 00 00 39 56 00 00 39 37 00 00 39 2b 00 00 39 9e 00 00 39 78 00 00 39 52 00 00 39 33 00 00 39 28 00 00 39 9b 00 00 39 77 00 00 39 51 00 00 39 30 00 00 39 26 00 00 39 99 00 00 39 77 00 00 39 51 00 00 39 30 00 00 39 25 00 00 39 96 00 00 39 77 00 00 39 52 00 00 39 2f 00 00 39 24 00 00 39 93 00 00 39 77 00 00 39 53 00 00 39 31 00 00 39 26 00 00 39 90 00 00 39 75 00 00 39 55 00 00 39 39 00 00 39 2f 00 00 39 8a 00 00 39 72 00 00 39 57 00 00 39 3d 00 00 39 34 00 00 39 80 00 00 39 70 00 00 39 57 00 00 39 3d 00 00 39 32 00 00 39 75 00 00 39 6c 00 00 39 58 00 00 39 3c 00 00 39 2e 00 00 39 6d 00 00 39 64 00 00 39 54 00 00 39 39 00 00 39 2b 00 00 39 63 00 00 39 55 00 00 39 49 00 00 39 32 00 00 39 28 00 00 39 52 00 00 39 4d 00 00 39 43 00 00 39 30 00 00 39 25 00 00 39 b4 00 00 39 42 00 00 39 3c 00 00 39 2e 00 00 39 22 00 00 3a 03 00 00 39 30 00 00 39 2f 00 00 39 26 00 00 39 1f 00 00 3a 02 00 00 39 2a 00 00 39 29 00 00 39 1d 00 00 39 19 00 00 39 fe 00 00 39 32 00 00 39 20 00 00 39 16 00 00 39 0f 00 00 39 fa 00 00 39 4e 00 00 39 1a 00 00 39 13 00 00 39 0c 00 00 39 f7 00 00 39 42 00 00 39 21 00 00 39 17 00 00 39 0d 00 00 39 f3 00 00 39 54 00 00 39 29 00 00 39 14 00 00 39 0f 00 00 39 f4 00 00 39 62 00 00 39 26 00 00 39 14 00 00 39 10 00 00 3a 00 00 00 39 6e 00 00 39 23 00 00 39 14 00 00 39 12 00 00 39 62 00 00 39 32 00 00 39 25 00 00 39 15 00 00 39 14 00 00 39 62 00 00 39 32 00 00 39 25 00 00 39 15 00 00 39 14 00 00 39 62 00 00 39 32 00 00 39 25 00 00 39 15 00 00 39 14];
+			};
+
+			qcom,pc-temp-z5-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 32 e2 00 00 31 ea 00 00 3b 11 00 00 39 89 00 00 3e c6 00 00 3a 95 00 00 40 d1 00 00 51 10 00 00 55 15 00 00 64 f6 00 00 40 cf 00 00 45 67 00 00 4e 67 00 00 59 09 00 00 5b ed 00 00 45 82 00 00 4b 61 00 00 52 04 00 00 5e 4e 00 00 5f 70 00 00 49 76 00 00 50 5f 00 00 56 2e 00 00 61 62 00 00 64 64 00 00 4c f9 00 00 55 05 00 00 5a ea 00 00 61 47 00 00 68 5a 00 00 51 06 00 00 59 c5 00 00 5f 68 00 00 60 b8 00 00 6c 48 00 00 55 75 00 00 5f 04 00 00 62 5c 00 00 61 b6 00 00 6e 8f 00 00 5a 73 00 00 64 38 00 00 64 9e 00 00 66 55 00 00 6f 8d 00 00 60 7d 00 00 68 ac 00 00 64 f6 00 00 68 fd 00 00 6f c8 00 00 67 aa 00 00 6c ba 00 00 62 d4 00 00 65 99 00 00 6f cd 00 00 72 1a 00 00 70 91 00 00 61 28 00 00 61 2e 00 00 6f fc 00 00 79 8a 00 00 74 92 00 00 64 b0 00 00 63 36 00 00 70 08 00 00 7a 8a 00 00 77 e1 00 00 6b 84 00 00 6b 77 00 00 6f c1 00 00 7a cd 00 00 79 97 00 00 6c b3 00 00 6e a4 00 00 6f 99 00 00 7b cc 00 00 7a bd 00 00 6a 1d 00 00 6a 7d 00 00 71 2d 00 00 80 11 00 00 7c 7e 00 00 68 7f 00 00 66 83 00 00 74 31 00 00 84 61 00 00 7f b4 00 00 6b d3 00 00 6a 19 00 00 78 8b 00 00 85 f9 00 00 83 15 00 00 72 30 00 00 73 20 00 00 7f 27 00 00 87 54 00 00 85 a5 00 00 76 be 00 00 78 45 00 00 85 31 00 00 89 27 00 00 88 bb 00 00 7a a4 00 00 7a fa 00 00 8b f3 00 00 8c d2 00 00 90 68 00 00 7f f6 00 00 7c ec 00 00 91 a2 00 00 93 35 00 00 aa 9b 00 00 8e be 00 00 7e fb 00 00 94 c3 00 00 a9 60 00 00 bd 62 00 00 9c ce 00 00 80 77 00 00 95 42 00 00 d4 6c 00 00 ac 3a 00 00 8e 35 00 00 7b 9e 00 00 8c 5e 00 00 e3 d0 00 00 8a 12 00 00 62 bd 00 00 69 60 00 00 70 7e 00 00 c9 2e 00 00 7a f5 00 00 53 d5 00 00 60 a8 00 00 62 36 00 00 a9 3a 00 00 73 90 00 00 5d 8f 00 00 66 7f 00 00 67 23 00 00 9e 05 00 00 70 b2 00 00 6b 6d 00 00 6d 26 00 00 6f a3 00 00 97 52 00 00 7d 91 00 00 7a 0b 00 00 6f 90 00 00 78 42 00 00 95 70 00 00 94 14 00 00 8a cc 00 00 74 d1 00 00 81 cf 00 00 99 ab 00 00 a1 48 00 00 94 c3 00 00 7a 70 00 00 84 b5 00 00 a0 a0 00 00 aa d8 00 00 9a dc 00 00 84 d9 00 00 83 d4 00 00 a8 28 00 00 af a2 00 00 a1 0d 00 00 8f 16 00 00 83 0d 00 00 b1 f9 00 00 b0 fa 00 00 ab 2e 00 00 95 c7 00 00 84 e9 00 00 b6 1f 00 00 b1 e9 00 00 b4 a9 00 00 9a ca 00 00 88 92 00 00 b5 03 00 00 b3 67 00 00 b5 1a 00 00 9a e7 00 00 89 1c 00 00 b3 8c 00 00 b6 45 00 00 b0 42 00 00 96 3f 00 00 87 62 00 00 b3 13 00 00 b7 54 00 00 a9 0b 00 00 90 48 00 00 86 56 00 00 b2 1a 00 00 b1 5a 00 00 98 5d 00 00 87 c1 00 00 89 ed 00 00 b0 8a 00 00 a8 bb 00 00 88 12 00 00 7f e4 00 00 90 60 00 00 aa 80 00 00 a2 11 00 00 84 a9 00 00 7f c4 00 00 98 2f 00 00 a6 3b 00 00 9d 07 00 00 83 75 00 00 82 dd 00 00 a2 dc 00 00 a1 a0 00 00 9e ca 00 00 83 75 00 00 80 99 00 00 9a 84 00 00 5c 1f 00 00 9f 73 00 00 83 77 00 00 76 ef 00 00 86 88 00 00 2e 1c 00 00 96 fd 00 00 7d 63 00 00 6a c6 00 00 65 33 00 00 2d ed 00 00 97 ef 00 00 79 53 00 00 7d 71 00 00 6a 7f 00 00 2d 98 00 00 6e 3f 00 00 81 ff 00 00 7c 67 00 00 8a 5b 00 00 2d 67 00 00 43 c7 00 00 8a d8 00 00 7d 40 00 00 87 e6 00 00 2d 48 00 00 53 9d 00 00 74 04 00 00 73 53 00 00 be 21 00 00 2d 5c 00 00 47 57 00 00 63 96 00 00 8f df 00 00 c6 9f 00 00 2d 79 00 00 3e 41 00 00 69 35 00 00 9f 27 00 00 c0 73 00 00 2e 87 00 00 3a d9 00 00 6f 4c 00 00 93 e8 00 00 be 5f 00 00 a5 57 00 00 8e e4 00 00 6c 3a 00 00 a9 92 00 00 a5 7e 00 00 a5 57 00 00 8e e4 00 00 6c 3a 00 00 a9 92 00 00 a5 7e 00 00 a5 57 00 00 8e e4 00 00 6c 3a 00 00 a9 92 00 00 a5 7e];
+			};
+
+			qcom,pc-temp-z6-lut {
+				qcom,lut-col-legend = <0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 3c 32 00 00 39 d0 00 00 38 dc 00 00 38 67 00 00 38 56 00 00 3c 15 00 00 3a 82 00 00 38 d9 00 00 38 5e 00 00 38 49 00 00 3b e8 00 00 3a 4a 00 00 39 04 00 00 38 7a 00 00 38 57 00 00 3b 99 00 00 39 eb 00 00 38 e5 00 00 38 73 00 00 38 54 00 00 3b 30 00 00 39 b4 00 00 38 ca 00 00 38 6a 00 00 38 4f 00 00 3a e5 00 00 39 8e 00 00 38 b9 00 00 38 61 00 00 38 4b 00 00 3a af 00 00 39 6f 00 00 38 ab 00 00 38 59 00 00 38 46 00 00 3a 82 00 00 39 57 00 00 38 a0 00 00 38 54 00 00 38 42 00 00 3a 5b 00 00 39 43 00 00 38 96 00 00 38 51 00 00 38 40 00 00 3a 39 00 00 39 32 00 00 38 90 00 00 38 4e 00 00 38 3e 00 00 3a 1c 00 00 39 24 00 00 38 8a 00 00 38 4b 00 00 38 3c 00 00 3a 01 00 00 39 1b 00 00 38 86 00 00 38 48 00 00 38 3a 00 00 39 ed 00 00 39 15 00 00 38 83 00 00 38 45 00 00 38 38 00 00 39 e3 00 00 39 11 00 00 38 80 00 00 38 43 00 00 38 36 00 00 39 dc 00 00 39 0d 00 00 38 7d 00 00 38 41 00 00 38 34 00 00 39 d8 00 00 39 0a 00 00 38 7b 00 00 38 3e 00 00 38 32 00 00 39 d5 00 00 39 08 00 00 38 79 00 00 38 3b 00 00 38 30 00 00 39 d2 00 00 39 06 00 00 38 78 00 00 38 3a 00 00 38 2e 00 00 39 d0 00 00 39 05 00 00 38 77 00 00 38 38 00 00 38 2c 00 00 39 cf 00 00 39 04 00 00 38 77 00 00 38 38 00 00 38 2b 00 00 39 ce 00 00 39 03 00 00 38 77 00 00 38 37 00 00 38 2a 00 00 39 cf 00 00 39 03 00 00 38 77 00 00 38 37 00 00 38 2a 00 00 39 cf 00 00 39 0c 00 00 38 86 00 00 38 42 00 00 38 33 00 00 39 dd 00 00 39 19 00 00 38 9a 00 00 38 55 00 00 38 44 00 00 39 ff 00 00 39 29 00 00 38 a3 00 00 38 5d 00 00 38 4b 00 00 3a 0d 00 00 39 3a 00 00 38 a9 00 00 38 62 00 00 38 4f 00 00 3a 0d 00 00 39 3c 00 00 38 aa 00 00 38 63 00 00 38 50 00 00 3a 0c 00 00 39 33 00 00 38 a7 00 00 38 60 00 00 38 4e 00 00 3a 0a 00 00 39 2d 00 00 38 a4 00 00 38 5b 00 00 38 4a 00 00 3a 04 00 00 39 2d 00 00 38 a1 00 00 38 57 00 00 38 47 00 00 3a 01 00 00 39 2c 00 00 38 9f 00 00 38 54 00 00 38 44 00 00 39 fe 00 00 39 2c 00 00 38 9d 00 00 38 50 00 00 38 41 00 00 39 fc 00 00 39 2b 00 00 38 99 00 00 38 4d 00 00 38 3d 00 00 39 fd 00 00 39 2a 00 00 38 98 00 00 38 4b 00 00 38 3a 00 00 39 fe 00 00 39 2c 00 00 38 98 00 00 38 49 00 00 38 38 00 00 39 ff 00 00 39 2e 00 00 38 99 00 00 38 48 00 00 38 36 00 00 3a 03 00 00 39 30 00 00 38 9a 00 00 38 49 00 00 38 37 00 00 3a 06 00 00 39 31 00 00 38 9c 00 00 38 4d 00 00 38 3d 00 00 3a 06 00 00 39 32 00 00 38 9e 00 00 38 50 00 00 38 40 00 00 3a 05 00 00 39 33 00 00 38 9f 00 00 38 50 00 00 38 40 00 00 3a 05 00 00 39 33 00 00 38 9f 00 00 38 50 00 00 38 3f 00 00 3a 08 00 00 39 32 00 00 38 9d 00 00 38 4f 00 00 38 3f 00 00 3a 0b 00 00 39 2f 00 00 38 9a 00 00 38 4d 00 00 38 3e 00 00 3a 0a 00 00 39 2f 00 00 38 9a 00 00 38 4d 00 00 38 3d 00 00 3a 00 00 00 39 2e 00 00 38 99 00 00 38 4c 00 00 38 3c 00 00 39 fd 00 00 39 24 00 00 38 90 00 00 38 45 00 00 38 36 00 00 39 fa 00 00 39 22 00 00 38 8d 00 00 38 41 00 00 38 32 00 00 39 fd 00 00 39 20 00 00 38 88 00 00 38 3c 00 00 38 2d 00 00 39 fc 00 00 39 1e 00 00 38 87 00 00 38 39 00 00 38 2a 00 00 39 fc 00 00 39 21 00 00 38 8b 00 00 38 3f 00 00 38 32 00 00 3a 02 00 00 39 29 00 00 38 91 00 00 38 44 00 00 38 35 00 00 3a 09 00 00 39 2f 00 00 38 95 00 00 38 46 00 00 38 37 00 00 3a 19 00 00 39 39 00 00 38 99 00 00 38 47 00 00 38 39 00 00 3a 46 00 00 39 4b 00 00 38 9f 00 00 38 4c 00 00 38 3c 00 00 3a 46 00 00 39 4b 00 00 38 9f 00 00 38 4c 00 00 38 3c 00 00 3a 46 00 00 39 4b 00 00 38 9f 00 00 38 4c 00 00 38 3c];
+			};
+
+			qcom,pc-temp-y1-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 16 0e 00 00 14 c8 00 00 13 b8 00 00 12 ba 00 00 12 4c 00 00 12 2d 00 00 16 2d 00 00 14 c1 00 00 13 b8 00 00 12 bd 00 00 12 4c 00 00 12 2f 00 00 16 44 00 00 14 b9 00 00 13 b6 00 00 12 be 00 00 12 4b 00 00 12 32 00 00 16 53 00 00 14 b3 00 00 13 b3 00 00 12 bd 00 00 12 4b 00 00 12 34 00 00 16 5c 00 00 14 af 00 00 13 b0 00 00 12 bc 00 00 12 4b 00 00 12 36 00 00 16 5e 00 00 14 ae 00 00 13 af 00 00 12 bb 00 00 12 4b 00 00 12 38 00 00 16 56 00 00 14 af 00 00 13 af 00 00 12 b9 00 00 12 4b 00 00 12 3a 00 00 16 4a 00 00 14 b2 00 00 13 ae 00 00 12 b7 00 00 12 4b 00 00 12 3c 00 00 16 4b 00 00 14 b4 00 00 13 ae 00 00 12 b7 00 00 12 4c 00 00 12 3e 00 00 16 58 00 00 14 b5 00 00 13 ad 00 00 12 ba 00 00 12 4d 00 00 12 40 00 00 16 65 00 00 14 b7 00 00 13 ad 00 00 12 bb 00 00 12 4f 00 00 12 41 00 00 16 73 00 00 14 ba 00 00 13 af 00 00 12 bb 00 00 12 51 00 00 12 44 00 00 16 7f 00 00 14 be 00 00 13 b2 00 00 12 bb 00 00 12 52 00 00 12 46 00 00 16 7a 00 00 14 c4 00 00 13 b1 00 00 12 bc 00 00 12 54 00 00 12 48 00 00 16 65 00 00 14 cb 00 00 13 b1 00 00 12 bd 00 00 12 55 00 00 12 4a 00 00 16 5b 00 00 14 d0 00 00 13 b2 00 00 12 bf 00 00 12 57 00 00 12 4c 00 00 16 69 00 00 14 d3 00 00 13 b6 00 00 12 c2 00 00 12 5a 00 00 12 4e 00 00 16 79 00 00 14 d6 00 00 13 b8 00 00 12 c5 00 00 12 5c 00 00 12 51 00 00 16 7a 00 00 14 d4 00 00 13 b6 00 00 12 c7 00 00 12 5e 00 00 12 52 00 00 16 79 00 00 14 cd 00 00 13 b2 00 00 12 c9 00 00 12 5f 00 00 12 53 00 00 16 78 00 00 14 cb 00 00 13 b3 00 00 12 ca 00 00 12 61 00 00 12 55 00 00 16 7a 00 00 14 ce 00 00 13 b8 00 00 12 cc 00 00 12 63 00 00 12 56 00 00 16 7c 00 00 14 d1 00 00 13 bc 00 00 12 ce 00 00 12 65 00 00 12 57 00 00 16 81 00 00 14 d2 00 00 13 c1 00 00 12 d1 00 00 12 66 00 00 12 59 00 00 16 8d 00 00 14 d0 00 00 13 c5 00 00 12 d4 00 00 12 68 00 00 12 5c 00 00 16 91 00 00 14 d0 00 00 13 c6 00 00 12 d7 00 00 12 6a 00 00 12 5d 00 00 16 8f 00 00 14 d3 00 00 13 c6 00 00 12 da 00 00 12 6b 00 00 12 5f 00 00 16 8c 00 00 14 d6 00 00 13 c6 00 00 12 dc 00 00 12 6d 00 00 12 60 00 00 16 8c 00 00 14 d9 00 00 13 c8 00 00 12 df 00 00 12 6e 00 00 12 61 00 00 16 8e 00 00 14 dd 00 00 13 c9 00 00 12 e1 00 00 12 70 00 00 12 62 00 00 16 8f 00 00 14 e0 00 00 13 cd 00 00 12 e5 00 00 12 72 00 00 12 63 00 00 16 91 00 00 14 e6 00 00 13 d5 00 00 12 e8 00 00 12 74 00 00 12 65 00 00 16 94 00 00 14 ea 00 00 13 d9 00 00 12 e9 00 00 12 76 00 00 12 66 00 00 16 90 00 00 14 ea 00 00 13 d9 00 00 12 eb 00 00 12 78 00 00 12 68 00 00 16 89 00 00 14 e9 00 00 13 d9 00 00 12 ec 00 00 12 7a 00 00 12 69 00 00 16 86 00 00 14 e9 00 00 13 da 00 00 12 ed 00 00 12 7b 00 00 12 6a 00 00 16 82 00 00 14 ee 00 00 13 dc 00 00 12 ef 00 00 12 7c 00 00 12 6b 00 00 16 7f 00 00 14 f2 00 00 13 dd 00 00 12 f1 00 00 12 7e 00 00 12 6d 00 00 16 83 00 00 14 ed 00 00 13 de 00 00 12 f4 00 00 12 7f 00 00 12 6e 00 00 16 8a 00 00 14 e4 00 00 13 df 00 00 12 f6 00 00 12 81 00 00 12 6f 00 00 16 94 00 00 14 e1 00 00 13 de 00 00 12 f8 00 00 12 82 00 00 12 70 00 00 16 aa 00 00 14 e1 00 00 13 de 00 00 12 fa 00 00 12 83 00 00 12 70 00 00 16 a9 00 00 14 e3 00 00 13 e0 00 00 12 fc 00 00 12 85 00 00 12 72 00 00 16 8a 00 00 14 eb 00 00 13 e4 00 00 12 fc 00 00 12 85 00 00 12 73 00 00 16 90 00 00 14 f3 00 00 13 e4 00 00 13 01 00 00 12 86 00 00 12 74 00 00 16 8a 00 00 14 eb 00 00 13 fa 00 00 13 03 00 00 12 88 00 00 12 75 00 00 16 94 00 00 15 00 00 00 13 f6 00 00 12 ff 00 00 12 8a 00 00 12 76 00 00 16 a2 00 00 14 fa 00 00 13 fb 00 00 13 05 00 00 12 89 00 00 12 75 00 00 16 a5 00 00 15 00 00 00 13 f1 00 00 13 06 00 00 12 89 00 00 12 76 00 00 16 d0 00 00 14 f0 00 00 13 f2 00 00 13 05 00 00 12 8a 00 00 12 77 00 00 16 cf 00 00 14 ef 00 00 13 f4 00 00 13 0d 00 00 12 8b 00 00 12 77 00 00 17 21 00 00 15 06 00 00 13 f4 00 00 13 0e 00 00 12 8e 00 00 12 7a 00 00 17 5e 00 00 15 34 00 00 14 11 00 00 13 17 00 00 12 91 00 00 12 7c 00 00 17 bd 00 00 15 77 00 00 14 48 00 00 13 23 00 00 12 95 00 00 12 80 00 00 17 bd 00 00 15 77 00 00 14 48 00 00 13 23 00 00 12 95 00 00 12 80 00 00 17 bd 00 00 15 77 00 00 14 48 00 00 13 23 00 00 12 95 00 00 12 80];
+			};
+
+			qcom,pc-temp-y2-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 28 c5 00 00 2a d4 00 00 2c 9a 00 00 2d 7e 00 00 2e c2 00 00 30 7c 00 00 29 09 00 00 2b 15 00 00 2c 8c 00 00 2d 7f 00 00 2e e1 00 00 30 6b 00 00 29 57 00 00 2b 3e 00 00 2c 7a 00 00 2d 75 00 00 2e e9 00 00 30 45 00 00 29 a4 00 00 2b 54 00 00 2c 65 00 00 2d 63 00 00 2e e0 00 00 30 17 00 00 29 e3 00 00 2b 5d 00 00 2c 4e 00 00 2d 4c 00 00 2e cb 00 00 2f f2 00 00 2a 0a 00 00 2b 5f 00 00 2c 37 00 00 2d 35 00 00 2e af 00 00 2f e3 00 00 2a 1d 00 00 2b 4f 00 00 2c 1d 00 00 2d 18 00 00 2e 79 00 00 2f c0 00 00 2a 2a 00 00 2b 34 00 00 2c 01 00 00 2c f7 00 00 2e 47 00 00 2f 90 00 00 2a 33 00 00 2b 20 00 00 2b e5 00 00 2c cc 00 00 2e 35 00 00 2f 5c 00 00 2a 39 00 00 2b 0e 00 00 2b c7 00 00 2c 99 00 00 2e 28 00 00 2f 07 00 00 2a 40 00 00 2b 06 00 00 2b b2 00 00 2c 8d 00 00 2e 24 00 00 2e ec 00 00 2a 48 00 00 2b 09 00 00 2b a2 00 00 2c ac 00 00 2e 18 00 00 2f 1b 00 00 2a 54 00 00 2b 0f 00 00 2b 99 00 00 2c c6 00 00 2e 0f 00 00 2f 45 00 00 2a 6f 00 00 2b 1c 00 00 2b a1 00 00 2c b9 00 00 2e 12 00 00 2f 34 00 00 2a a7 00 00 2b 3e 00 00 2b bb 00 00 2c a1 00 00 2e 1a 00 00 2f 0e 00 00 2a d9 00 00 2b 65 00 00 2b da 00 00 2c a0 00 00 2e 24 00 00 2f 06 00 00 2b 02 00 00 2b 8f 00 00 2c 05 00 00 2c bd 00 00 2e 32 00 00 2f 1a 00 00 2b 20 00 00 2b bd 00 00 2c 37 00 00 2c e8 00 00 2e 38 00 00 2f 29 00 00 2b 27 00 00 2b ee 00 00 2c 77 00 00 2d 34 00 00 2e 1a 00 00 2f 3b 00 00 2b 25 00 00 2c 23 00 00 2c b3 00 00 2d 94 00 00 2d f2 00 00 2f 5d 00 00 2b 1e 00 00 2c 34 00 00 2c b9 00 00 2d e6 00 00 2e 3b 00 00 2f 8b 00 00 2b 12 00 00 2c 08 00 00 2c a5 00 00 2e 34 00 00 2f 7e 00 00 2f e8 00 00 2a f9 00 00 2b d8 00 00 2c 9a 00 00 2e 49 00 00 30 1b 00 00 30 4a 00 00 2a 0a 00 00 2b e4 00 00 2c a6 00 00 2d f0 00 00 2f 98 00 00 30 b2 00 00 27 a5 00 00 2c 0e 00 00 2c bc 00 00 2d 96 00 00 2f 03 00 00 31 08 00 00 26 81 00 00 2c 20 00 00 2c d1 00 00 2d 94 00 00 2f 06 00 00 31 18 00 00 26 49 00 00 2c 22 00 00 2c e9 00 00 2d 9b 00 00 2f 31 00 00 31 03 00 00 26 28 00 00 2c 23 00 00 2c f9 00 00 2d a7 00 00 2f 57 00 00 31 0e 00 00 26 0e 00 00 2c 24 00 00 2d 02 00 00 2d c9 00 00 2f 7d 00 00 31 48 00 00 25 fa 00 00 2c 28 00 00 2d 09 00 00 2d ee 00 00 2f a3 00 00 31 7b 00 00 25 f0 00 00 2c 2b 00 00 2d 12 00 00 2e 08 00 00 2f d0 00 00 31 77 00 00 25 ea 00 00 2c 2a 00 00 2d 21 00 00 2e 1d 00 00 30 00 00 00 31 5f 00 00 25 e5 00 00 2c 23 00 00 2d 24 00 00 2e 22 00 00 30 0b 00 00 31 7d 00 00 25 e0 00 00 2c 10 00 00 2d 19 00 00 2e 1d 00 00 2f ed 00 00 31 b8 00 00 25 db 00 00 2b ea 00 00 2d 0d 00 00 2e 1a 00 00 2f d7 00 00 31 d7 00 00 25 d6 00 00 2b c3 00 00 2c fc 00 00 2e 2f 00 00 2f ea 00 00 31 a9 00 00 25 d2 00 00 2b 9c 00 00 2c e2 00 00 2e 4e 00 00 30 06 00 00 31 5c 00 00 25 ce 00 00 2b 6c 00 00 2c d1 00 00 2e 44 00 00 2f fd 00 00 31 54 00 00 25 cb 00 00 2b 30 00 00 2c c4 00 00 2e 1d 00 00 2f e3 00 00 31 86 00 00 25 c8 00 00 2a d8 00 00 2c b0 00 00 2e 11 00 00 2f d4 00 00 31 a2 00 00 25 c6 00 00 29 fa 00 00 2c 68 00 00 2e 22 00 00 2f cf 00 00 31 64 00 00 25 c5 00 00 27 52 00 00 2c 08 00 00 2e 23 00 00 2f c0 00 00 31 0d 00 00 25 c3 00 00 26 39 00 00 2b b2 00 00 2d e7 00 00 2f 71 00 00 30 a0 00 00 25 c2 00 00 25 ff 00 00 2b 1b 00 00 2d fd 00 00 2f a9 00 00 31 05 00 00 25 c0 00 00 25 e0 00 00 2a af 00 00 2d 91 00 00 2f 60 00 00 30 96 00 00 25 bf 00 00 25 d4 00 00 2a 19 00 00 2d 94 00 00 2f 36 00 00 30 15 00 00 25 c2 00 00 25 cd 00 00 29 1d 00 00 2d 8e 00 00 2f 09 00 00 2f 86 00 00 25 cf 00 00 25 c8 00 00 28 31 00 00 2d a1 00 00 2e c3 00 00 2f 2c 00 00 25 f2 00 00 25 c3 00 00 27 ae 00 00 2d 81 00 00 2e b0 00 00 2f 61 00 00 26 1f 00 00 25 bf 00 00 26 58 00 00 2d 4f 00 00 2e 92 00 00 2f 64 00 00 25 b8 00 00 25 bd 00 00 25 e2 00 00 2c dd 00 00 2e 4f 00 00 2e fe 00 00 25 b2 00 00 25 e7 00 00 25 c2 00 00 2c 58 00 00 2d fd 00 00 2e 92 00 00 25 b0 00 00 25 b9 00 00 26 5b 00 00 2b f3 00 00 2d 73 00 00 2e 2c 00 00 25 b2 00 00 25 b2 00 00 25 f9 00 00 2c 04 00 00 2c fc 00 00 2d 32 00 00 25 b2 00 00 25 b2 00 00 25 f9 00 00 2c 04 00 00 2c fc 00 00 2d 32 00 00 25 b2 00 00 25 b2 00 00 25 f9 00 00 2c 04 00 00 2c fc 00 00 2d 32];
+			};
+
+			qcom,pc-temp-y3-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 34 64 00 00 34 12 00 00 33 f5 00 00 33 e0 00 00 33 d7 00 00 33 d3 00 00 34 64 00 00 34 14 00 00 33 f6 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 64 00 00 34 18 00 00 33 f8 00 00 33 e1 00 00 33 d6 00 00 33 d3 00 00 34 65 00 00 34 1b 00 00 33 fa 00 00 33 e1 00 00 33 d6 00 00 33 d3 00 00 34 66 00 00 34 1e 00 00 33 fc 00 00 33 e2 00 00 33 d6 00 00 33 d3 00 00 34 67 00 00 34 20 00 00 33 fd 00 00 33 e2 00 00 33 d6 00 00 33 d3 00 00 34 68 00 00 34 20 00 00 33 fd 00 00 33 e3 00 00 33 d6 00 00 33 d4 00 00 34 69 00 00 34 20 00 00 33 fe 00 00 33 e3 00 00 33 d7 00 00 33 d5 00 00 34 69 00 00 34 21 00 00 33 fe 00 00 33 e3 00 00 33 d7 00 00 33 d5 00 00 34 68 00 00 34 22 00 00 33 fe 00 00 33 e3 00 00 33 d7 00 00 33 d5 00 00 34 67 00 00 34 23 00 00 33 fe 00 00 33 e4 00 00 33 d8 00 00 33 d5 00 00 34 64 00 00 34 23 00 00 33 fe 00 00 33 e4 00 00 33 d8 00 00 33 d5 00 00 34 60 00 00 34 23 00 00 33 fe 00 00 33 e5 00 00 33 d8 00 00 33 d6 00 00 34 5f 00 00 34 22 00 00 33 ff 00 00 33 e4 00 00 33 d9 00 00 33 d6 00 00 34 5e 00 00 34 20 00 00 34 00 00 00 33 e4 00 00 33 d9 00 00 33 d6 00 00 34 5d 00 00 34 1f 00 00 34 00 00 00 33 e4 00 00 33 d9 00 00 33 d6 00 00 34 59 00 00 34 1d 00 00 33 ff 00 00 33 e6 00 00 33 db 00 00 33 d6 00 00 34 54 00 00 34 1c 00 00 33 fe 00 00 33 e8 00 00 33 dc 00 00 33 d6 00 00 34 4e 00 00 34 1b 00 00 33 fd 00 00 33 e9 00 00 33 dc 00 00 33 d7 00 00 34 46 00 00 34 1b 00 00 33 fc 00 00 33 ea 00 00 33 db 00 00 33 d8 00 00 34 40 00 00 34 1a 00 00 33 fb 00 00 33 ea 00 00 33 db 00 00 33 d9 00 00 34 3a 00 00 34 14 00 00 33 f9 00 00 33 e9 00 00 33 dd 00 00 33 da 00 00 34 34 00 00 34 0d 00 00 33 f7 00 00 33 e7 00 00 33 de 00 00 33 da 00 00 34 2c 00 00 34 0a 00 00 33 f4 00 00 33 e3 00 00 33 da 00 00 33 d7 00 00 34 21 00 00 34 08 00 00 33 f2 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 1d 00 00 34 07 00 00 33 f1 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 1f 00 00 34 05 00 00 33 f0 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 22 00 00 34 04 00 00 33 f0 00 00 33 e0 00 00 33 d5 00 00 33 d3 00 00 34 22 00 00 34 03 00 00 33 ef 00 00 33 df 00 00 33 d5 00 00 33 d3 00 00 34 20 00 00 34 02 00 00 33 ef 00 00 33 df 00 00 33 d5 00 00 33 d3 00 00 34 21 00 00 34 00 00 00 33 ef 00 00 33 df 00 00 33 d6 00 00 33 d3 00 00 34 2c 00 00 33 fc 00 00 33 ee 00 00 33 e0 00 00 33 d6 00 00 33 d2 00 00 34 3a 00 00 33 f9 00 00 33 ee 00 00 33 e0 00 00 33 d6 00 00 33 d2 00 00 34 48 00 00 33 fa 00 00 33 ee 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 58 00 00 33 fd 00 00 33 ed 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 6a 00 00 34 00 00 00 33 ed 00 00 33 e0 00 00 33 d6 00 00 33 d3 00 00 34 81 00 00 34 02 00 00 33 ed 00 00 33 df 00 00 33 d6 00 00 33 d2 00 00 34 9e 00 00 34 05 00 00 33 ee 00 00 33 df 00 00 33 d6 00 00 33 d2 00 00 34 c2 00 00 34 07 00 00 33 ee 00 00 33 de 00 00 33 d5 00 00 33 d2 00 00 34 f0 00 00 34 0a 00 00 33 ef 00 00 33 de 00 00 33 d5 00 00 33 d2 00 00 35 24 00 00 34 0e 00 00 33 f0 00 00 33 de 00 00 33 d5 00 00 33 d3 00 00 35 62 00 00 34 14 00 00 33 f2 00 00 33 de 00 00 33 d6 00 00 33 d4 00 00 35 af 00 00 34 1d 00 00 33 f4 00 00 33 de 00 00 33 d6 00 00 33 d4 00 00 36 16 00 00 34 2c 00 00 33 f5 00 00 33 de 00 00 33 d5 00 00 33 d4 00 00 36 ac 00 00 34 45 00 00 33 f5 00 00 33 dc 00 00 33 d5 00 00 33 d3 00 00 37 70 00 00 34 69 00 00 33 fd 00 00 33 df 00 00 33 d6 00 00 33 d4 00 00 38 3f 00 00 34 91 00 00 34 00 00 00 33 e1 00 00 33 d7 00 00 33 d6 00 00 39 3b 00 00 34 d8 00 00 34 06 00 00 33 e4 00 00 33 db 00 00 33 d7 00 00 3a 1a 00 00 35 47 00 00 34 19 00 00 33 e7 00 00 33 dc 00 00 33 d8 00 00 3b db 00 00 36 09 00 00 34 37 00 00 33 e6 00 00 33 db 00 00 33 d7 00 00 39 70 00 00 37 b3 00 00 34 7e 00 00 33 e6 00 00 33 d9 00 00 33 d6 00 00 3c f7 00 00 39 ef 00 00 35 ef 00 00 33 e8 00 00 33 db 00 00 33 d7 00 00 49 07 00 00 37 37 00 00 39 9f 00 00 33 ed 00 00 33 db 00 00 33 d8 00 00 81 42 00 00 3b 50 00 00 36 b6 00 00 34 04 00 00 33 de 00 00 33 da 00 00 81 42 00 00 3b 50 00 00 36 b6 00 00 34 04 00 00 33 de 00 00 33 da 00 00 81 42 00 00 3b 50 00 00 36 b6 00 00 34 04 00 00 33 de 00 00 33 da];
+			};
+
+			qcom,pc-temp-y4-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 40 ea 00 00 40 9a 00 00 40 71 00 00 40 56 00 00 40 3c 00 00 40 35 00 00 41 0c 00 00 40 ac 00 00 40 7f 00 00 40 54 00 00 40 3a 00 00 40 33 00 00 41 48 00 00 40 ca 00 00 40 8d 00 00 40 50 00 00 40 36 00 00 40 30 00 00 41 8a 00 00 40 eb 00 00 40 98 00 00 40 4c 00 00 40 32 00 00 40 2c 00 00 41 c1 00 00 41 06 00 00 40 a0 00 00 40 49 00 00 40 2f 00 00 40 2a 00 00 41 da 00 00 41 10 00 00 40 a2 00 00 40 48 00 00 40 2e 00 00 40 28 00 00 41 de 00 00 41 0f 00 00 40 9f 00 00 40 47 00 00 40 2e 00 00 40 27 00 00 41 e0 00 00 41 0d 00 00 40 9a 00 00 40 47 00 00 40 2e 00 00 40 27 00 00 41 de 00 00 41 08 00 00 40 95 00 00 40 47 00 00 40 2e 00 00 40 27 00 00 41 d7 00 00 41 00 00 00 40 90 00 00 40 48 00 00 40 2f 00 00 40 28 00 00 41 d4 00 00 40 fc 00 00 40 8e 00 00 40 4a 00 00 40 30 00 00 40 28 00 00 41 d9 00 00 40 fc 00 00 40 8e 00 00 40 4b 00 00 40 31 00 00 40 29 00 00 41 e3 00 00 40 fc 00 00 40 8f 00 00 40 4e 00 00 40 33 00 00 40 2b 00 00 41 f2 00 00 41 00 00 00 40 92 00 00 40 53 00 00 40 36 00 00 40 2c 00 00 42 08 00 00 41 10 00 00 40 9a 00 00 40 5a 00 00 40 3a 00 00 40 2f 00 00 42 12 00 00 41 24 00 00 40 a5 00 00 40 61 00 00 40 3d 00 00 40 32 00 00 42 0f 00 00 41 48 00 00 40 b7 00 00 40 68 00 00 40 40 00 00 40 36 00 00 42 07 00 00 41 69 00 00 40 ce 00 00 40 71 00 00 40 44 00 00 40 3b 00 00 41 ef 00 00 41 6f 00 00 40 f0 00 00 40 81 00 00 40 4d 00 00 40 3f 00 00 41 b4 00 00 41 72 00 00 41 13 00 00 40 95 00 00 40 59 00 00 40 44 00 00 41 7d 00 00 41 70 00 00 41 12 00 00 40 a3 00 00 40 67 00 00 40 4e 00 00 41 4f 00 00 41 33 00 00 40 ec 00 00 40 b0 00 00 40 7a 00 00 40 5f 00 00 41 29 00 00 40 e4 00 00 40 c1 00 00 40 b2 00 00 40 81 00 00 40 67 00 00 41 14 00 00 40 c0 00 00 40 94 00 00 40 80 00 00 40 5f 00 00 40 4f 00 00 41 06 00 00 40 a8 00 00 40 6f 00 00 40 4b 00 00 40 38 00 00 40 30 00 00 40 f8 00 00 40 98 00 00 40 64 00 00 40 42 00 00 40 32 00 00 40 2c 00 00 40 e3 00 00 40 8f 00 00 40 5e 00 00 40 3f 00 00 40 30 00 00 40 2b 00 00 40 d5 00 00 40 88 00 00 40 5c 00 00 40 3e 00 00 40 30 00 00 40 2a 00 00 40 d8 00 00 40 80 00 00 40 5d 00 00 40 41 00 00 40 32 00 00 40 2c 00 00 40 e1 00 00 40 79 00 00 40 5d 00 00 40 44 00 00 40 35 00 00 40 2e 00 00 40 e6 00 00 40 73 00 00 40 5e 00 00 40 4a 00 00 40 39 00 00 40 32 00 00 40 e6 00 00 40 6e 00 00 40 60 00 00 40 51 00 00 40 3e 00 00 40 37 00 00 40 e7 00 00 40 6a 00 00 40 60 00 00 40 57 00 00 40 44 00 00 40 3c 00 00 40 ea 00 00 40 6c 00 00 40 5f 00 00 40 5d 00 00 40 4d 00 00 40 43 00 00 40 f0 00 00 40 72 00 00 40 5d 00 00 40 5f 00 00 40 51 00 00 40 47 00 00 40 f6 00 00 40 7a 00 00 40 5f 00 00 40 5f 00 00 40 4c 00 00 40 41 00 00 40 fe 00 00 40 88 00 00 40 62 00 00 40 5d 00 00 40 41 00 00 40 35 00 00 41 05 00 00 40 98 00 00 40 65 00 00 40 55 00 00 40 39 00 00 40 2f 00 00 41 0b 00 00 40 a6 00 00 40 68 00 00 40 42 00 00 40 32 00 00 40 2c 00 00 41 10 00 00 40 b2 00 00 40 6c 00 00 40 3b 00 00 40 2f 00 00 40 2b 00 00 41 11 00 00 40 ba 00 00 40 70 00 00 40 3e 00 00 40 30 00 00 40 2b 00 00 41 0c 00 00 40 c0 00 00 40 74 00 00 40 3f 00 00 40 30 00 00 40 2b 00 00 41 07 00 00 40 c1 00 00 40 7b 00 00 40 3f 00 00 40 2e 00 00 40 29 00 00 41 03 00 00 40 c1 00 00 40 7b 00 00 40 3e 00 00 40 2d 00 00 40 27 00 00 41 08 00 00 40 be 00 00 40 6c 00 00 40 34 00 00 40 25 00 00 40 20 00 00 41 09 00 00 40 b9 00 00 40 7d 00 00 40 43 00 00 40 2e 00 00 40 27 00 00 41 13 00 00 40 c2 00 00 40 92 00 00 40 4c 00 00 40 32 00 00 40 2b 00 00 41 1a 00 00 40 ce 00 00 40 b0 00 00 40 5c 00 00 40 3b 00 00 40 3a 00 00 41 03 00 00 40 e2 00 00 40 d9 00 00 40 73 00 00 40 62 00 00 40 64 00 00 40 e8 00 00 40 ff 00 00 40 ff 00 00 40 6d 00 00 40 48 00 00 40 47 00 00 59 4f 00 00 41 27 00 00 41 1b 00 00 40 63 00 00 40 35 00 00 40 33 00 00 79 1e 00 00 41 35 00 00 41 69 00 00 40 76 00 00 40 3e 00 00 40 3b 00 00 e8 e9 00 00 57 53 00 00 42 8b 00 00 40 9d 00 00 40 48 00 00 40 46 00 00 71 46 00 00 8f 46 00 00 6c 6e 00 00 41 0d 00 00 40 7e 00 00 40 84 00 00 71 46 00 00 8f 46 00 00 6c 6e 00 00 41 0d 00 00 40 7e 00 00 40 84 00 00 71 46 00 00 8f 46 00 00 6c 6e 00 00 41 0d 00 00 40 7e 00 00 40 84];
+			};
+
+			qcom,pc-temp-y5-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 40 86 00 00 4a d4 00 00 51 50 00 00 4d f6 00 00 56 22 00 00 51 e5 00 00 41 b2 00 00 4d 34 00 00 55 29 00 00 53 eb 00 00 59 26 00 00 52 be 00 00 43 16 00 00 4f ce 00 00 57 eb 00 00 57 4e 00 00 5b 05 00 00 57 31 00 00 44 a9 00 00 52 31 00 00 59 bf 00 00 58 d6 00 00 5b e8 00 00 5d 41 00 00 46 65 00 00 53 ed 00 00 5a c6 00 00 59 37 00 00 5b f9 00 00 62 ea 00 00 48 41 00 00 54 91 00 00 5b 25 00 00 59 1c 00 00 5b 60 00 00 66 43 00 00 4a da 00 00 54 37 00 00 5a 87 00 00 57 53 00 00 59 c0 00 00 6a dd 00 00 4d 1c 00 00 53 8f 00 00 59 50 00 00 54 d7 00 00 57 84 00 00 6e b6 00 00 4d 66 00 00 53 0f 00 00 57 b4 00 00 52 b7 00 00 55 34 00 00 6b a2 00 00 4d 58 00 00 52 8a 00 00 54 dc 00 00 4f 7d 00 00 52 9d 00 00 63 5a 00 00 4d 38 00 00 51 ce 00 00 51 f1 00 00 4d 1c 00 00 50 69 00 00 5d cd 00 00 4b 8b 00 00 4f c8 00 00 4e c5 00 00 4b 94 00 00 4e a3 00 00 5b 25 00 00 49 7b 00 00 4c d7 00 00 4b f6 00 00 49 ee 00 00 4c cf 00 00 58 be 00 00 49 dc 00 00 49 b6 00 00 4a 01 00 00 46 32 00 00 4a 0d 00 00 55 ba 00 00 4c a1 00 00 45 f8 00 00 48 0e 00 00 41 85 00 00 47 23 00 00 52 64 00 00 4f e3 00 00 44 7c 00 00 45 ce 00 00 40 b9 00 00 46 cc 00 00 4e 75 00 00 54 15 00 00 45 68 00 00 42 3a 00 00 41 94 00 00 48 b1 00 00 49 0a 00 00 57 db 00 00 47 6a 00 00 40 1c 00 00 42 56 00 00 49 f3 00 00 46 09 00 00 59 54 00 00 4d 19 00 00 41 ac 00 00 42 bc 00 00 46 4c 00 00 46 ad 00 00 5a 60 00 00 59 09 00 00 45 99 00 00 43 54 00 00 40 e7 00 00 48 2a 00 00 5a ca 00 00 5d f7 00 00 4b f4 00 00 46 68 00 00 41 8e 00 00 49 e0 00 00 5b 37 00 00 5d 51 00 00 58 08 00 00 4f 8e 00 00 48 70 00 00 4c 52 00 00 5b 62 00 00 5c 9e 00 00 5f 9c 00 00 57 08 00 00 4f 7c 00 00 4f af 00 00 55 50 00 00 5d 6a 00 00 61 91 00 00 5b eb 00 00 56 43 00 00 56 2a 00 00 44 b4 00 00 5f ee 00 00 62 64 00 00 5f cc 00 00 5b 86 00 00 5d 13 00 00 3b 65 00 00 61 6e 00 00 62 6c 00 00 63 2d 00 00 5d 12 00 00 60 a0 00 00 38 4d 00 00 62 15 00 00 62 83 00 00 66 5e 00 00 5e 08 00 00 63 31 00 00 36 5a 00 00 62 77 00 00 62 e6 00 00 66 5c 00 00 5e 03 00 00 63 bc 00 00 34 de 00 00 62 75 00 00 63 81 00 00 5f c0 00 00 5a 93 00 00 5f d7 00 00 33 92 00 00 62 14 00 00 64 10 00 00 5a df 00 00 57 03 00 00 5a 04 00 00 33 2f 00 00 60 76 00 00 64 13 00 00 5d 35 00 00 55 d9 00 00 53 c5 00 00 34 50 00 00 54 1d 00 00 63 9b 00 00 61 44 00 00 55 1c 00 00 4d 2a 00 00 35 8a 00 00 49 26 00 00 64 05 00 00 61 f1 00 00 54 a0 00 00 4b c4 00 00 36 50 00 00 4a db 00 00 66 13 00 00 61 3b 00 00 53 21 00 00 4e 0f 00 00 37 9c 00 00 50 28 00 00 67 8a 00 00 60 d0 00 00 52 32 00 00 51 1d 00 00 38 4d 00 00 53 fe 00 00 65 c3 00 00 63 53 00 00 59 36 00 00 54 0a 00 00 38 94 00 00 58 23 00 00 62 71 00 00 67 5c 00 00 63 8d 00 00 57 51 00 00 38 d5 00 00 5b 7f 00 00 61 84 00 00 6a 14 00 00 64 6f 00 00 5a 95 00 00 39 43 00 00 5c fb 00 00 62 94 00 00 6c 65 00 00 61 96 00 00 5d c0 00 00 39 c7 00 00 5d b6 00 00 63 0c 00 00 6c 55 00 00 5f b8 00 00 61 e0 00 00 3a 1a 00 00 5b 00 00 00 60 ec 00 00 65 99 00 00 5f 87 00 00 69 df 00 00 3a 38 00 00 4b 32 00 00 5d cd 00 00 61 d2 00 00 5f 9d 00 00 72 35 00 00 39 6e 00 00 40 98 00 00 59 d1 00 00 60 45 00 00 5f bd 00 00 78 4c 00 00 36 d2 00 00 3b 57 00 00 56 e9 00 00 60 b7 00 00 61 1c 00 00 77 ed 00 00 36 56 00 00 3a 04 00 00 57 4b 00 00 58 be 00 00 68 21 00 00 77 6a 00 00 35 0d 00 00 39 15 00 00 54 10 00 00 56 c6 00 00 57 5e 00 00 60 d4 00 00 35 49 00 00 37 f2 00 00 4c e8 00 00 53 93 00 00 51 9f 00 00 63 e1 00 00 36 c2 00 00 37 d3 00 00 45 e2 00 00 57 c0 00 00 69 82 00 00 6a de 00 00 52 66 00 00 37 0f 00 00 49 4b 00 00 5b e6 00 00 64 c4 00 00 60 c4 00 00 73 8b 00 00 37 fa 00 00 46 02 00 00 63 1d 00 00 6a fa 00 00 68 c9 00 00 25 bc 00 00 38 fd 00 00 40 4e 00 00 63 e5 00 00 6c 11 00 00 73 68 00 00 22 fd 00 00 49 94 00 00 38 11 00 00 62 45 00 00 77 68 00 00 77 e1 00 00 23 5d 00 00 24 8e 00 00 38 99 00 00 5f f6 00 00 6c 0c 00 00 6e 4c 00 00 23 12 00 00 23 9e 00 00 2a 58 00 00 5f 03 00 00 67 d3 00 00 6a b3 00 00 23 12 00 00 23 9e 00 00 2a 58 00 00 5f 03 00 00 67 d3 00 00 6a b3 00 00 23 12 00 00 23 9e 00 00 2a 58 00 00 5f 03 00 00 67 d3 00 00 6a b3];
+			};
+
+			qcom,pc-temp-y6-lut {
+				qcom,lut-col-legend = <0xfffffff6 0 10 25 40 50>;
+				qcom,lut-row-legend = <10000 9800 9600 9400 9200 9000 8800 8600
+				                       8400 8200 8000 7800 7600 7400 7200 7000
+				                       6800 6600 6400 6200 6000 5800 5600 5400
+				                       5200 5000 4800 4600 4400 4200 4000 3800
+				                       3600 3400 3200 3000 2800 2600 2400 2200
+				                       2000 1800 1600 1400 1200 1000 900 800
+				                       700 600 500 400 300 200 100 0>;
+				qcom,lut-data = [00 00 15 a4 00 00 14 5b 00 00 13 dd 00 00 13 7a 00 00 13 58 00 00 13 51 00 00 15 ab 00 00 14 66 00 00 13 de 00 00 13 79 00 00 13 57 00 00 13 50 00 00 15 b0 00 00 14 6d 00 00 13 df 00 00 13 77 00 00 13 56 00 00 13 4f 00 00 15 b2 00 00 14 71 00 00 13 df 00 00 13 76 00 00 13 55 00 00 13 4e 00 00 15 b3 00 00 14 72 00 00 13 de 00 00 13 75 00 00 13 54 00 00 13 4e 00 00 15 b3 00 00 14 72 00 00 13 dd 00 00 13 75 00 00 13 54 00 00 13 4e 00 00 15 b0 00 00 14 6f 00 00 13 db 00 00 13 74 00 00 13 54 00 00 13 4e 00 00 15 a9 00 00 14 69 00 00 13 d7 00 00 13 74 00 00 13 55 00 00 13 4f 00 00 15 a3 00 00 14 64 00 00 13 d4 00 00 13 74 00 00 13 55 00 00 13 4f 00 00 15 9c 00 00 14 60 00 00 13 d0 00 00 13 74 00 00 13 55 00 00 13 50 00 00 15 98 00 00 14 5d 00 00 13 ce 00 00 13 75 00 00 13 56 00 00 13 50 00 00 15 96 00 00 14 59 00 00 13 cc 00 00 13 75 00 00 13 57 00 00 13 51 00 00 15 95 00 00 14 56 00 00 13 cb 00 00 13 77 00 00 13 58 00 00 13 52 00 00 15 96 00 00 14 56 00 00 13 cc 00 00 13 78 00 00 13 59 00 00 13 53 00 00 15 99 00 00 14 58 00 00 13 cd 00 00 13 79 00 00 13 5b 00 00 13 54 00 00 15 9b 00 00 14 5b 00 00 13 d0 00 00 13 7c 00 00 13 5c 00 00 13 55 00 00 15 99 00 00 14 64 00 00 13 d3 00 00 13 7f 00 00 13 5e 00 00 13 56 00 00 15 96 00 00 14 6d 00 00 13 d8 00 00 13 83 00 00 13 61 00 00 13 58 00 00 15 8e 00 00 14 6e 00 00 13 e1 00 00 13 89 00 00 13 63 00 00 13 5a 00 00 15 7b 00 00 14 6e 00 00 13 eb 00 00 13 8f 00 00 13 66 00 00 13 5d 00 00 15 6b 00 00 14 6d 00 00 13 ea 00 00 13 93 00 00 13 6a 00 00 13 60 00 00 15 5f 00 00 14 59 00 00 13 de 00 00 13 96 00 00 13 71 00 00 13 66 00 00 15 54 00 00 14 3f 00 00 13 d1 00 00 13 96 00 00 13 74 00 00 13 68 00 00 15 4a 00 00 14 35 00 00 13 c2 00 00 13 86 00 00 13 68 00 00 13 5f 00 00 15 40 00 00 14 2e 00 00 13 b7 00 00 13 74 00 00 13 5a 00 00 13 54 00 00 15 3c 00 00 14 2c 00 00 13 b4 00 00 13 72 00 00 13 58 00 00 13 52 00 00 15 3f 00 00 14 2b 00 00 13 b3 00 00 13 71 00 00 13 57 00 00 13 52 00 00 15 43 00 00 14 2b 00 00 13 b3 00 00 13 71 00 00 13 57 00 00 13 52 00 00 15 4a 00 00 14 2b 00 00 13 b4 00 00 13 72 00 00 13 58 00 00 13 53 00 00 15 57 00 00 14 2c 00 00 13 b6 00 00 13 73 00 00 13 59 00 00 13 54 00 00 15 66 00 00 14 2d 00 00 13 b7 00 00 13 75 00 00 13 5a 00 00 13 55 00 00 15 78 00 00 14 2e 00 00 13 b9 00 00 13 78 00 00 13 5c 00 00 13 56 00 00 15 8c 00 00 14 30 00 00 13 bb 00 00 13 7b 00 00 13 5e 00 00 13 57 00 00 15 a1 00 00 14 35 00 00 13 bc 00 00 13 7d 00 00 13 61 00 00 13 5a 00 00 15 b8 00 00 14 42 00 00 13 be 00 00 13 7e 00 00 13 62 00 00 13 5b 00 00 15 d2 00 00 14 4f 00 00 13 c0 00 00 13 7e 00 00 13 61 00 00 13 59 00 00 15 f1 00 00 14 5d 00 00 13 c3 00 00 13 7e 00 00 13 5e 00 00 13 56 00 00 16 13 00 00 14 6e 00 00 13 c7 00 00 13 7c 00 00 13 5c 00 00 13 54 00 00 16 3b 00 00 14 80 00 00 13 cb 00 00 13 77 00 00 13 59 00 00 13 53 00 00 16 67 00 00 14 93 00 00 13 cf 00 00 13 75 00 00 13 58 00 00 13 53 00 00 16 97 00 00 14 a7 00 00 13 d5 00 00 13 76 00 00 13 59 00 00 13 54 00 00 16 cb 00 00 14 bb 00 00 13 dd 00 00 13 77 00 00 13 5a 00 00 13 55 00 00 17 0a 00 00 14 d5 00 00 13 e9 00 00 13 78 00 00 13 59 00 00 13 54 00 00 17 5c 00 00 14 f9 00 00 13 f4 00 00 13 78 00 00 13 59 00 00 13 53 00 00 17 d1 00 00 15 2b 00 00 13 f5 00 00 13 75 00 00 13 56 00 00 13 51 00 00 18 67 00 00 15 62 00 00 14 13 00 00 13 7c 00 00 13 5a 00 00 13 54 00 00 18 e4 00 00 15 9d 00 00 14 2b 00 00 13 80 00 00 13 5c 00 00 13 56 00 00 19 75 00 00 15 ea 00 00 14 4f 00 00 13 88 00 00 13 61 00 00 13 5c 00 00 1a 44 00 00 16 56 00 00 14 88 00 00 13 91 00 00 13 6e 00 00 13 69 00 00 1b f5 00 00 16 ff 00 00 14 ce 00 00 13 90 00 00 13 65 00 00 13 60 00 00 21 ad 00 00 18 23 00 00 15 45 00 00 13 8d 00 00 13 5f 00 00 13 5a 00 00 2d cd 00 00 19 70 00 00 16 a5 00 00 13 97 00 00 13 63 00 00 13 5d 00 00 56 94 00 00 1e d0 00 00 19 0a 00 00 13 a9 00 00 13 67 00 00 13 61 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75 00 00 5b 44 00 00 32 67 00 00 25 07 00 00 13 da 00 00 13 79 00 00 13 75];
+			};
+		};
+	};
+
+	qcom_cp_manager {
+		compatible = "xiaomi,usbpd-pm";
+		status = "ok";
+		mi,pd-bat-volt-max = <4500>;
+		mi,pd-ffc-bat-volt-max = <4500>;
+		mi,pd-bat-curr-max = <6000>;
+		mi,pd-bus-volt-max = <12000>;
+		mi,pd-bus-curr-max = <3000>;
+		mi,pd-bus-curr-compensate = <100>;
+		#io-channel-cells = <1>;
+		io-channels = <&pm7250b_charger PSY_IIO_PD_ACTIVE &pm7250b_charger PSY_IIO_CP_INPUT_SUSPEND
+		               &pm7250b_charger PSY_IIO_BATTERY_CHARGING_ENABLED &sc8541_standalone PSY_IIO_PRESENT
+		               &sc8541_standalone PSY_IIO_CHARGING_ENABLED &sc8541_standalone PSY_IIO_STATUS
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_PRESENT &sc8541_standalone PSY_IIO_SC_VBUS_PRESENT
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE &sc8541_standalone PSY_IIO_SC_BATTERY_CURRENT
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_TEMPERATURE &sc8541_standalone PSY_IIO_SC_BUS_VOLTAGE
+		               &sc8541_standalone PSY_IIO_SC_BUS_CURRENT &sc8541_standalone PSY_IIO_SC_BUS_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_DIE_TEMPERATURE &sc8541_standalone PSY_IIO_SC_ALARM_STATUS
+		               &sc8541_standalone PSY_IIO_SC_FAULT_STATUS &sc8541_standalone PSY_IIO_SC_VBUS_ERROR_STATUS
+		               &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR &sc8541_standalone PSY_IIO_DEV_CHIP_ID
+		               &sc8541_standalone PSY_IIO_SET_CP_WORKMODE &pm7250b_charger PSY_IIO_APDO_VOLT
+		               &pm7250b_charger PSY_IIO_APDO_CURR &bq25960_standalone PSY_IIO_PRESENT
+		               &bq25960_standalone PSY_IIO_CHARGING_ENABLED &bq25960_standalone PSY_IIO_STATUS
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_PRESENT &bq25960_standalone PSY_IIO_SC_VBUS_PRESENT
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE &bq25960_standalone PSY_IIO_SC_BATTERY_CURRENT
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_TEMPERATURE &bq25960_standalone PSY_IIO_SC_BUS_VOLTAGE
+		               &bq25960_standalone PSY_IIO_SC_BUS_CURRENT &bq25960_standalone PSY_IIO_SC_BUS_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_DIE_TEMPERATURE &bq25960_standalone PSY_IIO_SC_ALARM_STATUS
+		               &bq25960_standalone PSY_IIO_SC_FAULT_STATUS &bq25960_standalone PSY_IIO_SC_VBUS_ERROR_STATUS
+		               &bq25960_standalone PSY_IIO_SET_CP_WORKMODE>;
+		io-channel-names = "pd_active", "cp_input_suspend", "battery_charging_enabled", "present", "charging_enabled", "status", "sc_battery_present", "sc_vbus_present", "sc_battery_voltage", "sc_battery_current", "sc_battery_temperature", "sc_bus_voltage", "sc_bus_current", "sc_bus_temperature", "sc_die_temperature", "sc_alarm_status", "sc_fault_status", "sc_vbus_error_status", "sc_chip_vendor", "sc_chip_id", "sc_set_cp_workmode", "apdo_volt", "apdo_curr", "bq_present", "bq_charging_enabled", "bq_status", "bq_battery_present", "bq_vbus_present", "bq_battery_voltage", "bq_battery_current", "bq_battery_temperature", "bq_bus_voltage", "bq_bus_current", "bq_bus_temperature", "bq_die_temperature", "bq_alarm_status", "bq_fault_status", "bq_vbus_error_status", "bq_set_cp_workmode";
+	};
+
+	cp_qc30 {
+		compatible = "xiaomi,cp-qc30";
+		status = "ok";
+		mi,qc3-bat-volt-max = <4450>;
+		mi,qc3-ffc-bat-volt-max = <4450>;
+		mi,qc3-bat-curr-max = <5400>;
+		mi,qc3-bus-volt-max = <12000>;
+		mi,qc3-bus-curr-max = <2100>;
+		#io-channel-cells = <1>;
+		io-channels = <&pm7250b_charger PSY_IIO_USB_REAL_TYPE &pm7250b_charger PSY_IIO_HVDCP3_TYPE
+		               &pm7250b_charger PSY_IIO_CP_INPUT_SUSPEND &pm7250b_charger PSY_IIO_BATTERY_CHARGING_ENABLED
+		               &pm7250b_charger PSY_IIO_DP_DM &pm7250b_charger PSY_IIO_BATTERY_CHARGING_LIMITED
+		               &sc8541_standalone PSY_IIO_PRESENT &sc8541_standalone PSY_IIO_CHARGING_ENABLED
+		               &sc8541_standalone PSY_IIO_STATUS &sc8541_standalone PSY_IIO_SC_BATTERY_PRESENT
+		               &sc8541_standalone PSY_IIO_SC_VBUS_PRESENT &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_CURRENT &sc8541_standalone PSY_IIO_SC_BATTERY_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_BUS_VOLTAGE &sc8541_standalone PSY_IIO_SC_BUS_CURRENT
+		               &sc8541_standalone PSY_IIO_SC_BUS_TEMPERATURE &sc8541_standalone PSY_IIO_SC_DIE_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_ALARM_STATUS &sc8541_standalone PSY_IIO_SC_FAULT_STATUS
+		               &sc8541_standalone PSY_IIO_SC_VBUS_ERROR_STATUS &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR
+		               &sc8541_standalone PSY_IIO_DEV_CHIP_ID &sc8541_standalone PSY_IIO_SET_BUS_PROTECTION
+		               &bq25960_standalone PSY_IIO_PRESENT &bq25960_standalone PSY_IIO_CHARGING_ENABLED
+		               &bq25960_standalone PSY_IIO_STATUS &bq25960_standalone PSY_IIO_SC_BATTERY_PRESENT
+		               &bq25960_standalone PSY_IIO_SC_VBUS_PRESENT &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_CURRENT &bq25960_standalone PSY_IIO_SC_BATTERY_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_BUS_VOLTAGE &bq25960_standalone PSY_IIO_SC_BUS_CURRENT
+		               &bq25960_standalone PSY_IIO_SC_BUS_TEMPERATURE &bq25960_standalone PSY_IIO_SC_DIE_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_ALARM_STATUS &bq25960_standalone PSY_IIO_SC_FAULT_STATUS
+		               &bq25960_standalone PSY_IIO_SC_VBUS_ERROR_STATUS &bq25960_standalone PSY_IIO_SET_BUS_PROTECTION>;
+		io-channel-names = "real_type", "hvdcp3_type", "cp_input_suspend", "battery_charging_enabled", "battery_dp_dm", "battery_charging_limited", "present", "charging_enabled", "status", "sc_battery_present", "sc_vbus_present", "sc_battery_voltage", "sc_battery_current", "sc_battery_temperature", "sc_bus_voltage", "sc_bus_current", "sc_bus_temperature", "sc_die_temperature", "sc_alarm_status", "sc_fault_status", "sc_vbus_error_status", "sc_chip_vendor", "sc_chip_id", "sc_set_bus_protection", "bq_present", "bq_charging_enabled", "bq_status", "bq_battery_present", "bq_vbus_present", "bq_battery_voltage", "bq_battery_current", "bq_battery_temperature", "bq_bus_voltage", "bq_bus_current", "bq_bus_temperature", "bq_die_temperature", "bq_alarm_status", "bq_fault_status", "bq_vbus_error_status", "bq_set_bus_protection";
+	};
+};
+
+&qupv3_se1_i2c {
+	status = "ok";
+	qcom,bus-recovery;
+
+	smb1355: qcom,smb1355@c {
+		compatible = "qcom,i2c-pmic";
+		reg = <0xc>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		interrupt-parent = <&spmi_bus>;
+		interrupts = <2 197 0 8>;
+		interrupt_names = "smb1355";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		qcom,periph-map = <16 18 19 22>;
+		status = "disabled";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pm7250b_smb_int_default>;
+
+		smb1355_charger: qcom,smb1355-charger@1000 {
+			compatible = "qcom,smb1355";
+			reg = <0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			interrupt-parent = <&smb1355>;
+			status = "disabled";
+			qcom,parallel-mode = <1>;
+			qcom,hw-die-temp-mitigation;
+
+			qcom,chgr@1000 {
+				reg = <0x1000>;
+				interrupts = <16 1 1>;
+				interrupt-names = "chg-state-change";
+			};
+
+			qcom,chgr-misc@1600 {
+				reg = <0x1600>;
+				interrupts = <22 1 1 22 6 1>;
+				interrupt-names = "wdog-bark", "temperature-change";
+			};
+		};
+	};
+
+	smb1355_0: qcom,smb1355@8 {
+		compatible = "qcom,i2c-pmic";
+		reg = <0x8>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		interrupt-parent = <&spmi_bus>;
+		interrupts = <0 209 0 8>;
+		interrupt_names = "smb1355_0";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		qcom,periph-map = <16 18 19 22>;
+		status = "disabled";
+
+		smb1355_charger_0: qcom,smb1355-charger@1000 {
+			compatible = "qcom,smb1355";
+			reg = <0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			interrupt-parent = <&smb1355_0>;
+			status = "disabled";
+
+			qcom,chgr@1000 {
+				reg = <0x1000>;
+				interrupts = <16 1 1>;
+				interrupt-names = "chg-state-change";
+			};
+
+			qcom,chgr-misc@1600 {
+				reg = <0x1600>;
+				interrupts = <22 1 1 22 6 1>;
+				interrupt-names = "wdog-bark", "temperature-change";
+			};
+		};
+	};
+
+	sc8541_standalone: sc8541@6a {
+		compatible = "sc,sc8541-standalone";
+		status = "ok";
+		dep-supply = <&qupv3_se1_i2c>;
+		#io-channel-cells = <1>;
+		reg = <0x6a>;
+		sc8541,intr_gpio = <&tlmm 84 0>;
+		charger_name = "primary_dvchg";
+		sc,sc8541,vbat-ovp-dis = <0>;
+		sc,sc8541,vbat-ovp = <90>;
+		sc,sc8541,vbat-ovp-alm-dis = <1>;
+		sc,sc8541,vbat-ovp-alm = <70>;
+		sc,sc8541,ibat-ocp-dis = <0>;
+		sc,sc8541,ibat-ocp = <81>;
+		sc,sc8541,ibat-ocp-alm-dis = <1>;
+		sc,sc8541,ibat-ocp-alm = <80>;
+		sc,sc8541,ibus-ucp-dis = <0>;
+		sc,sc8541,vbus-in-range-dis = <0>;
+		sc,sc8541,vbus-pd-en = <0>;
+		sc,sc8541,vbus-ovp = <100>;
+		sc,sc8541,vbus-ovp-alm-dis = <1>;
+		sc,sc8541,vbus-ovp-alm = <80>;
+		sc,sc8541,ibus-ocp-dis = <0>;
+		sc,sc8541,ibus-ocp = <13>;
+		sc,sc8541,tshut-dis = <1>;
+		sc,sc8541,tsbus-flt-dis = <1>;
+		sc,sc8541,tsbat-flt-dis = <1>;
+		sc,sc8541,tdie-alm = <200>;
+		sc,sc8541,tsbus-flt = <21>;
+		sc,sc8541,tsbat-flt = <21>;
+		sc,sc8541,vac1-ovp = <3>;
+		sc,sc8541,vac2-ovp = <3>;
+		sc,sc8541,vac1-pd-en = <0>;
+		sc,sc8541,vac2-pd-en = <0>;
+		sc,sc8541,fsw-set = <4>;
+		sc,sc8541,wd-timeout = <0>;
+		sc,sc8541,wd-timeout-dis = <1>;
+		sc,sc8541,ibat-sns-r = <0>;
+		sc,sc8541,ss-timeout = <7>;
+		sc,sc8541,ibus-ucp-fall-dg = <1>;
+		sc,sc8541,vout-ovp-dis = <0>;
+		sc,sc8541,ms = <0>;
+		sc,sc8541,vout-ovp = <3>;
+		sc,sc8541,pmid2out-uvp = <7>;
+		sc,sc8541,pmid2out-ovp = <7>;
+	};
+
+	bq25960_standalone: bq25960@65 {
+		compatible = "bq,bq25960-standalone";
+		#io-channel-cells = <1>;
+		status = "ok";
+		dep-supply = <&qupv3_se1_i2c>;
+		reg = <0x65>;
+		bq25960,intr_gpio = <&tlmm 84 0>;
+		charger_name = "primary_dvchg";
+		bq,bq25960,vbat-ovp-dis = <0>;
+		bq,bq25960,vbat-ovp = <127>;
+		bq,bq25960,vbat-ovp-alm-dis = <1>;
+		bq,bq25960,vbat-ovp-alm = <122>;
+		bq,bq25960,ibat-ocp-dis = <0>;
+		bq,bq25960,ibat-ocp = <61>;
+		bq,bq25960,ibat-ocp-alm-dis = <1>;
+		bq,bq25960,ibat-ocp-alm = <61>;
+		bq,bq25960,ibus-ucp-dis = <0>;
+		bq,bq25960,ibus-ucp = <0>;
+		bq,bq25960,chg-config-2 = <0>;
+		bq,bq25960,vbus-pd-en = <0>;
+		bq,bq25960,vbus-ovp = <100>;
+		bq,bq25960,vbus-ovp-alm-dis = <0>;
+		bq,bq25960,vbus-ovp-alm = <100>;
+		bq,bq25960,ibus-ocp = <13>;
+		bq,bq25960,tsbus-flt-dis = <1>;
+		bq,bq25960,tsbat-flt-dis = <1>;
+		bq,bq25960,tdie-alm = <200>;
+		bq,bq25960,tsbus-flt = <21>;
+		bq,bq25960,tsbat-flt = <21>;
+		bq,bq25960,vac1-ovp = <3>;
+		bq,bq25960,vac2-ovp = <3>;
+		bq,bq25960,vac1-pd-en = <0>;
+		bq,bq25960,vac2-pd-en = <0>;
+		bq,bq25960,fsw-set = <4>;
+		bq,bq25960,wd-timeout = <0>;
+		bq,bq25960,wd-timeout-dis = <1>;
+		bq,bq25960,ibat-sns-r = <0>;
+		bq,bq25960,ss-timeout = <5>;
+		bq,bq25960,ibus-ucp-fall-dg = <1>;
+		bq,bq25960,vout-ovp-dis = <0>;
+		bq,bq25960,ms = <0>;
+		bq,bq25960,vout-ovp = <3>;
+	};
+};
+
+&usb0 {
+	extcon = <&pm7250b_pdphy &pm7250b_charger &eud>;
+};

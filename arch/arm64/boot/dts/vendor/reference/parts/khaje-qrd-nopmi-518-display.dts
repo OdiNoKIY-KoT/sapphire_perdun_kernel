@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* display techpack overlay part, first used by stock dtbo entry 11 (Qualcomm Technologies, Inc. KHAJE QRD nopmi overlay);
+ * reconstructed from the stock dtbo.img. */
+
+/dts-v1/;
+/plugin/;
+
+&qupv3_se2_i2c {
+	synaptics_tcm@20 {
+		status = "disabled";
+	};
+
+	novatek@62 {
+		status = "disabled";
+	};
+
+	focaltech@38 {
+		status = "disabled";
+	};
+};
+
+&usb0 {
+	dwc3@4e00000 {
+		dr_mode = "peripheral";
+	};
+};

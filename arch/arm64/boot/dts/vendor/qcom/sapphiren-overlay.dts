@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Redmi Note 13 4G - sapphiren (NFC) (board-id 0x30022)
+ *
+ * Kernel board overlay, laid out like Xiaomi's creek-sm6225-overlay.dts.
+ * Reconstructed from the stock dtbo.img entry 46; merged at build time with
+ * the camera/audio/display/touch techpack overlays (see build.sh).
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/qcom,gcc-khaje.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+#include "sapphire-sm6225.dtsi"
+#include "sapphire-pm7250b.dtsi"
+#include "sapphire-battery-auth.dtsi"
+#include "sapphire-charger.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. Khaje IDP sapphiren";
+	compatible = "qcom,khaje-idp", "qcom,khaje", "qcom,idp";
+	qcom,msm-id = <0x24a 0x10000 0x206 0x10000>;
+	qcom,board-id = <0x30022 0x0>;
+	qcom,pmic-id = <0x2d 0x2e 0x0 0x0>;
+};
+
+&sdhc_2 {
+	cd-gpios = <&tlmm 88 0>;
+};
+
+&soc {
+	simtray {
+		compatible = "xiaomi,simtray-status";
+		status-gpio = <&tlmm 79 0>;
+	};
+
+	thermal_message: thermal-message {
+		board-sensor = "VIRTUAL-SENSOR";
+	};
+};
+
+&qupv3_se4_2uart {
+	status = "disabled";
+};
+
+&qupv3_se4_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <400000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	st_st21nfc@08 {
+		compatible = "st,st21nfc";
+		reg = <0x8>;
+		st,irq-gpio = <&tlmm 70 0>;
+		st,reset-gpio = <&tlmm 69 0>;
+		st,clkreq-gpio = <&tlmm 71 0>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <70 0>;
+		interrupt-names = "nfc_irq";
+		clock-names = "nfc_ref_clk";
+		st,clk_pinctrl;
+	};
+};
+

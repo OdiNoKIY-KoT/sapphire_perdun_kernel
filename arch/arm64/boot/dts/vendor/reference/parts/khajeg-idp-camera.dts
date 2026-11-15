@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* camera techpack overlay part, first used by stock dtbo entry 18 (Qualcomm Technologies, Inc. Khajeg IDP);
+ * reconstructed from the stock dtbo.img. */
+
+/dts-v1/;
+/plugin/;
+
+&soc {
+	qcom,cam-res-mgr {
+		status = "disabled";
+	};
+};

@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Redmi Note 13 4G (sapphire/sapphiren) - battery authentication (onewire, DS28E30, SLG, STICK)
+ *
+ * Reconstructed from the stock dtbo.img (HyperOS OS2.0.215.0.VNHEUXM,
+ * entries 45/46) with labels and references restored.  Xiaomi/Longcheer
+ * keep this hardware description in their (unpublished) khaje-idp.dtsi /
+ * khaje-idp-pm7250b.dtsi; it is split per subsystem here.
+ */
+#include <dt-bindings/clock/qcom,gcc-khaje.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+
+&soc {
+	onewire_gpio: onewire_gpio {
+		compatible = "xiaomi,onewire_gpio";
+		label = "xm_onewire";
+		xiaomi,version = <1>;
+		onewire-gpio = <&tlmm 66 0>;
+		xiaomi,gpio_number = <66>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&onewire_gpio_active>;
+		pinctrl-1 = <&onewire_gpio_sleep>;
+		status = "ok";
+	};
+
+	maxim_ds28e30: maxim_ds28e30 {
+		#io-channel-cells = <1>;
+		compatible = "maxim,ds28e30";
+		label = "max_ds28e30";
+		maxim,version = <1>;
+		status = "ok";
+	};
+
+	acl_slg: acl_slg {
+		compatible = "acl,slg";
+		status = "okay";
+		def-supply = <&maxim_ds28e30>;
+	};
+
+	st_stick: st_stick {
+		compatible = "st,stick";
+		status = "okay";
+		def-supply = <&maxim_ds28e30 &acl_slg>;
+	};
+
+	auth_battery: auth_battery {
+		compatible = "lc,auth-battery";
+		status = "okay";
+		#io-channel-cells = <1>;
+		def-supply = <&maxim_ds28e30 &acl_slg &st_stick>;
+	};
+};
+
+&tlmm {
+	onewire_gpio_active: onewire_gpio_active {
+		mux {
+			pins = "gpio66";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio66";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+	};
+
+	onewire_gpio_sleep: onewire_gpio_sleep {
+		mux {
+			pins = "gpio66";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio66";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+	};
+};

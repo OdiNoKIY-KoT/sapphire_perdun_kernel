@@ -1,0 +1,86 @@
+/*
+ * Redmi Note 13 4G (sapphire) version of khaje-sde-display-common.dtsi.
+ *
+ * Based on MiCode creek-v-oss display-devicetree; changed to what the
+ * stock sapphire dtbo.img contains: the creek O19A panels are replaced by
+ * the sapphire panels (m7_38_0c_0a/0b, n7_38_0c_0a FHD+ video), the
+ * Qualcomm reference panels are the (older) versions shipped on sapphire,
+ * and the per-panel board properties live in the panel dtsi files.
+ */
+#include "dsi-panel-td4330-truly-v2-singlemipi-fhd-cmd.dtsi"
+#include "dsi-panel-td4330-truly-v2-singlemipi-fhd-vid.dtsi"
+#include "dsi-panel-nt36672e-fhd-plus-90hz-video.dtsi"
+#include "dsi_panel_m7_38_0c_0a_fhdp_video.dtsi"
+#include "dsi_panel_m7_38_0c_0b_fhdp_video.dtsi"
+#include "dsi_panel_n7_38_0c_0a_fhdp_video.dtsi"
+#include "dsi-panel-nt36672e-fhd-plus-120hz-video.dtsi"
+#include "dsi-panel-sim-video.dtsi"
+
+&soc {
+	dsi_panel_pwr_supply_no_labibb: dsi_panel_pwr_supply_no_labibb {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "vddio";
+			qcom,supply-min-voltage = <1800000>;
+			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-enable-load = <62000>;
+			qcom,supply-disable-load = <80>;
+			qcom,supply-post-on-sleep = <20>;
+		};
+	};
+
+	sde_dsi: qcom,dsi-display-primary {
+		compatible = "qcom,dsi-display";
+		label = "primary";
+		qcom,dsi-ctrl = <&mdss_dsi0>;
+		qcom,dsi-phy = <&mdss_dsi_phy0>;
+
+		pinctrl-names = "panel_active", "panel_suspend";
+		/* sapphire: LCM 1.8V enable (GPIO106) is part of the active state */
+		pinctrl-0 = <&sde_dsi_active &sde_te_active &lcm1p8en_active>;
+		pinctrl-1 = <&sde_dsi_suspend &sde_te_suspend>;
+
+		qcom,platform-te-gpio = <&tlmm 81 0>;
+		qcom,panel-te-source = <0>;
+
+		qcom,mdp = <&mdss_mdp>;
+		qcom,dsi-default-panel = <&dsi_n7_38_0c_0a_video>;
+	};
+
+	sde_wb: qcom,wb-display@0 {
+		status = "disabled";
+		compatible = "qcom,wb-display";
+		cell-index = <0>;
+		label = "wb_display";
+	};
+
+	msm_notifier: qcom,msm_notifier@0 {
+		compatible = "qcom,msm-notifier";
+	};
+};
+
+&mdss_mdp {
+	connectors = <&sde_dsi &smmu_sde_sec &smmu_sde_unsec>;
+};
+
+/* Xiaomi thermal/charger/fingerprint "screen" notifier hooks */
+&soc {
+	thermal-message {
+		board-sensor = "VIRTUAL-SENSOR";
+	};
+
+	thermal_screen: thermal-screen {
+		panel = <&dsi_n7_38_0c_0a_video>;
+	};
+
+	charger_screen: charger-screen {
+		panel = <&dsi_n7_38_0c_0a_video>;
+	};
+
+	fingerprint_screen: fingerprint-screen {
+		panel = <&dsi_n7_38_0c_0a_video>;
+	};
+};

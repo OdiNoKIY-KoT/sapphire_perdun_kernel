@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* nfc techpack overlay part, first used by stock dtbo entry 2 (Qualcomm Technologies, Inc. KHAJE IDP nopmi);
+ * reconstructed from the stock dtbo.img. */
+
+/dts-v1/;
+/plugin/;
+
+&qupv3_se1_i2c {
+	#size-cells = <0>;
+	#address-cells = <1>;
+	status = "ok";
+
+	nq@28 {
+		compatible = "qcom,sn-nci";
+		reg = <0x28>;
+		qcom,sn-irq = <&tlmm 70 0>;
+		qcom,sn-ven = <&tlmm 69 0>;
+		qcom,sn-firm = <&tlmm 31 0>;
+		qcom,sn-clkreq = <&tlmm 71 0>;
+		qcom,sn-vdd-1p8-supply = <&L9A>;
+		qcom,sn-vdd-1p8-voltage = <1800000 2000000>;
+		qcom,sn-vdd-1p8-current = <157000>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <70 0>;
+		interrupt-names = "nfc_irq";
+		pinctrl-names = "nfc_active", "nfc_suspend";
+		pinctrl-0 = <&nfc_int_active &nfc_enable_active &nfc_clk_req_active>;
+		pinctrl-1 = <&nfc_int_suspend &nfc_enable_suspend &nfc_clk_req_suspend>;
+	};
+};

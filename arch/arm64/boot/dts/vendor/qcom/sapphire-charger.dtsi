@@ -1,0 +1,278 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Redmi Note 13 4G (sapphire/sapphiren) - charging: Xiaomi smart charge, QG battery data, CP manager, SC8541/BQ25960 charge pumps, SMB1355
+ *
+ * Reconstructed from the stock dtbo.img (HyperOS OS2.0.215.0.VNHEUXM,
+ * entries 45/46) with labels and references restored.  Xiaomi/Longcheer
+ * keep this hardware description in their (unpublished) khaje-idp.dtsi /
+ * khaje-idp-pm7250b.dtsi; it is split per subsystem here.
+ */
+#include <dt-bindings/clock/qcom,gcc-khaje.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+
+&soc {
+	xm_smart_chg: xm_smart_chg {
+		compatible = "xiaomi,xm_smart_chg";
+		status = "ok";
+		label = "smart_charging";
+		xiaomi,pd-thermal-mitigation = <5950000 5400000 5000000 4500000 4000000 3700000 3500000 3000000
+		                                2800000 2500000 2000000 1500000 1000000 800000 500000 350000
+		                                800000 800000>;
+		xiaomi,pd-thermal-mitigation-fast = <6000000 5950000 5950000 5400000 5000000 4500000 4000000 3700000
+		                                     2800000 2500000 2000000 1500000 1000000 800000 500000 350000
+		                                     800000 800000>;
+		io-channels = <&pm7250b_qg PSY_IIO_CAPACITY &pm7250b_charger PSY_IIO_PD_ACTIVE
+		               &pm7250b_qg PSY_IIO_CAPACITY_RAW>;
+		io-channel-names = "capacity", "pd_active", "capacity_raw";
+	};
+};
+
+&soc {
+	mtp_batterydata: qcom,battery-data {
+		qcom,batt-id-range-pct = <15>;
+
+		#include "qg-batterydata-guanyu-5000mah.dtsi"
+
+		#include "qg-batterydata-lc-m335-nvt-5000mah.dtsi"
+	};
+
+	qcom_cp_manager {
+		compatible = "xiaomi,usbpd-pm";
+		status = "ok";
+		mi,pd-bat-volt-max = <4500>;
+		mi,pd-ffc-bat-volt-max = <4500>;
+		mi,pd-bat-curr-max = <6000>;
+		mi,pd-bus-volt-max = <12000>;
+		mi,pd-bus-curr-max = <3000>;
+		mi,pd-bus-curr-compensate = <100>;
+		#io-channel-cells = <1>;
+		io-channels = <&pm7250b_charger PSY_IIO_PD_ACTIVE &pm7250b_charger PSY_IIO_CP_INPUT_SUSPEND
+		               &pm7250b_charger PSY_IIO_BATTERY_CHARGING_ENABLED &sc8541_standalone PSY_IIO_PRESENT
+		               &sc8541_standalone PSY_IIO_CHARGING_ENABLED &sc8541_standalone PSY_IIO_STATUS
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_PRESENT &sc8541_standalone PSY_IIO_SC_VBUS_PRESENT
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE &sc8541_standalone PSY_IIO_SC_BATTERY_CURRENT
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_TEMPERATURE &sc8541_standalone PSY_IIO_SC_BUS_VOLTAGE
+		               &sc8541_standalone PSY_IIO_SC_BUS_CURRENT &sc8541_standalone PSY_IIO_SC_BUS_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_DIE_TEMPERATURE &sc8541_standalone PSY_IIO_SC_ALARM_STATUS
+		               &sc8541_standalone PSY_IIO_SC_FAULT_STATUS &sc8541_standalone PSY_IIO_SC_VBUS_ERROR_STATUS
+		               &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR &sc8541_standalone PSY_IIO_DEV_CHIP_ID
+		               &sc8541_standalone PSY_IIO_SET_CP_WORKMODE &pm7250b_charger PSY_IIO_APDO_VOLT
+		               &pm7250b_charger PSY_IIO_APDO_CURR &bq25960_standalone PSY_IIO_PRESENT
+		               &bq25960_standalone PSY_IIO_CHARGING_ENABLED &bq25960_standalone PSY_IIO_STATUS
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_PRESENT &bq25960_standalone PSY_IIO_SC_VBUS_PRESENT
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE &bq25960_standalone PSY_IIO_SC_BATTERY_CURRENT
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_TEMPERATURE &bq25960_standalone PSY_IIO_SC_BUS_VOLTAGE
+		               &bq25960_standalone PSY_IIO_SC_BUS_CURRENT &bq25960_standalone PSY_IIO_SC_BUS_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_DIE_TEMPERATURE &bq25960_standalone PSY_IIO_SC_ALARM_STATUS
+		               &bq25960_standalone PSY_IIO_SC_FAULT_STATUS &bq25960_standalone PSY_IIO_SC_VBUS_ERROR_STATUS
+		               &bq25960_standalone PSY_IIO_SET_CP_WORKMODE>;
+		io-channel-names = "pd_active", "cp_input_suspend", "battery_charging_enabled", "present", "charging_enabled", "status", "sc_battery_present", "sc_vbus_present", "sc_battery_voltage", "sc_battery_current", "sc_battery_temperature", "sc_bus_voltage", "sc_bus_current", "sc_bus_temperature", "sc_die_temperature", "sc_alarm_status", "sc_fault_status", "sc_vbus_error_status", "sc_chip_vendor", "sc_chip_id", "sc_set_cp_workmode", "apdo_volt", "apdo_curr", "bq_present", "bq_charging_enabled", "bq_status", "bq_battery_present", "bq_vbus_present", "bq_battery_voltage", "bq_battery_current", "bq_battery_temperature", "bq_bus_voltage", "bq_bus_current", "bq_bus_temperature", "bq_die_temperature", "bq_alarm_status", "bq_fault_status", "bq_vbus_error_status", "bq_set_cp_workmode";
+	};
+
+	cp_qc30 {
+		compatible = "xiaomi,cp-qc30";
+		status = "ok";
+		mi,qc3-bat-volt-max = <4450>;
+		mi,qc3-ffc-bat-volt-max = <4450>;
+		mi,qc3-bat-curr-max = <5400>;
+		mi,qc3-bus-volt-max = <12000>;
+		mi,qc3-bus-curr-max = <2100>;
+		#io-channel-cells = <1>;
+		io-channels = <&pm7250b_charger PSY_IIO_USB_REAL_TYPE &pm7250b_charger PSY_IIO_HVDCP3_TYPE
+		               &pm7250b_charger PSY_IIO_CP_INPUT_SUSPEND &pm7250b_charger PSY_IIO_BATTERY_CHARGING_ENABLED
+		               &pm7250b_charger PSY_IIO_DP_DM &pm7250b_charger PSY_IIO_BATTERY_CHARGING_LIMITED
+		               &sc8541_standalone PSY_IIO_PRESENT &sc8541_standalone PSY_IIO_CHARGING_ENABLED
+		               &sc8541_standalone PSY_IIO_STATUS &sc8541_standalone PSY_IIO_SC_BATTERY_PRESENT
+		               &sc8541_standalone PSY_IIO_SC_VBUS_PRESENT &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+		               &sc8541_standalone PSY_IIO_SC_BATTERY_CURRENT &sc8541_standalone PSY_IIO_SC_BATTERY_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_BUS_VOLTAGE &sc8541_standalone PSY_IIO_SC_BUS_CURRENT
+		               &sc8541_standalone PSY_IIO_SC_BUS_TEMPERATURE &sc8541_standalone PSY_IIO_SC_DIE_TEMPERATURE
+		               &sc8541_standalone PSY_IIO_SC_ALARM_STATUS &sc8541_standalone PSY_IIO_SC_FAULT_STATUS
+		               &sc8541_standalone PSY_IIO_SC_VBUS_ERROR_STATUS &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR
+		               &sc8541_standalone PSY_IIO_DEV_CHIP_ID &sc8541_standalone PSY_IIO_SET_BUS_PROTECTION
+		               &bq25960_standalone PSY_IIO_PRESENT &bq25960_standalone PSY_IIO_CHARGING_ENABLED
+		               &bq25960_standalone PSY_IIO_STATUS &bq25960_standalone PSY_IIO_SC_BATTERY_PRESENT
+		               &bq25960_standalone PSY_IIO_SC_VBUS_PRESENT &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+		               &bq25960_standalone PSY_IIO_SC_BATTERY_CURRENT &bq25960_standalone PSY_IIO_SC_BATTERY_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_BUS_VOLTAGE &bq25960_standalone PSY_IIO_SC_BUS_CURRENT
+		               &bq25960_standalone PSY_IIO_SC_BUS_TEMPERATURE &bq25960_standalone PSY_IIO_SC_DIE_TEMPERATURE
+		               &bq25960_standalone PSY_IIO_SC_ALARM_STATUS &bq25960_standalone PSY_IIO_SC_FAULT_STATUS
+		               &bq25960_standalone PSY_IIO_SC_VBUS_ERROR_STATUS &bq25960_standalone PSY_IIO_SET_BUS_PROTECTION>;
+		io-channel-names = "real_type", "hvdcp3_type", "cp_input_suspend", "battery_charging_enabled", "battery_dp_dm", "battery_charging_limited", "present", "charging_enabled", "status", "sc_battery_present", "sc_vbus_present", "sc_battery_voltage", "sc_battery_current", "sc_battery_temperature", "sc_bus_voltage", "sc_bus_current", "sc_bus_temperature", "sc_die_temperature", "sc_alarm_status", "sc_fault_status", "sc_vbus_error_status", "sc_chip_vendor", "sc_chip_id", "sc_set_bus_protection", "bq_present", "bq_charging_enabled", "bq_status", "bq_battery_present", "bq_vbus_present", "bq_battery_voltage", "bq_battery_current", "bq_battery_temperature", "bq_bus_voltage", "bq_bus_current", "bq_bus_temperature", "bq_die_temperature", "bq_alarm_status", "bq_fault_status", "bq_vbus_error_status", "bq_set_bus_protection";
+	};
+};
+
+&qupv3_se1_i2c {
+	status = "ok";
+	qcom,bus-recovery;
+
+	smb1355: qcom,smb1355@c {
+		compatible = "qcom,i2c-pmic";
+		reg = <0xc>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		interrupt-parent = <&spmi_bus>;
+		interrupts = <2 197 0 8>;
+		interrupt_names = "smb1355";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		qcom,periph-map = <16 18 19 22>;
+		status = "disabled";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pm7250b_smb_int_default>;
+
+		smb1355_charger: qcom,smb1355-charger@1000 {
+			compatible = "qcom,smb1355";
+			reg = <0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			interrupt-parent = <&smb1355>;
+			status = "disabled";
+			qcom,parallel-mode = <1>;
+			qcom,hw-die-temp-mitigation;
+
+			qcom,chgr@1000 {
+				reg = <0x1000>;
+				interrupts = <16 1 1>;
+				interrupt-names = "chg-state-change";
+			};
+
+			qcom,chgr-misc@1600 {
+				reg = <0x1600>;
+				interrupts = <22 1 1 22 6 1>;
+				interrupt-names = "wdog-bark", "temperature-change";
+			};
+		};
+	};
+
+	smb1355_0: qcom,smb1355@8 {
+		compatible = "qcom,i2c-pmic";
+		reg = <0x8>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		interrupt-parent = <&spmi_bus>;
+		interrupts = <0 209 0 8>;
+		interrupt_names = "smb1355_0";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		qcom,periph-map = <16 18 19 22>;
+		status = "disabled";
+
+		smb1355_charger_0: qcom,smb1355-charger@1000 {
+			compatible = "qcom,smb1355";
+			reg = <0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			interrupt-parent = <&smb1355_0>;
+			status = "disabled";
+
+			qcom,chgr@1000 {
+				reg = <0x1000>;
+				interrupts = <16 1 1>;
+				interrupt-names = "chg-state-change";
+			};
+
+			qcom,chgr-misc@1600 {
+				reg = <0x1600>;
+				interrupts = <22 1 1 22 6 1>;
+				interrupt-names = "wdog-bark", "temperature-change";
+			};
+		};
+	};
+
+	sc8541_standalone: sc8541@6a {
+		compatible = "sc,sc8541-standalone";
+		status = "ok";
+		dep-supply = <&qupv3_se1_i2c>;
+		#io-channel-cells = <1>;
+		reg = <0x6a>;
+		sc8541,intr_gpio = <&tlmm 84 0>;
+		charger_name = "primary_dvchg";
+		sc,sc8541,vbat-ovp-dis = <0>;
+		sc,sc8541,vbat-ovp = <90>;
+		sc,sc8541,vbat-ovp-alm-dis = <1>;
+		sc,sc8541,vbat-ovp-alm = <70>;
+		sc,sc8541,ibat-ocp-dis = <0>;
+		sc,sc8541,ibat-ocp = <81>;
+		sc,sc8541,ibat-ocp-alm-dis = <1>;
+		sc,sc8541,ibat-ocp-alm = <80>;
+		sc,sc8541,ibus-ucp-dis = <0>;
+		sc,sc8541,vbus-in-range-dis = <0>;
+		sc,sc8541,vbus-pd-en = <0>;
+		sc,sc8541,vbus-ovp = <100>;
+		sc,sc8541,vbus-ovp-alm-dis = <1>;
+		sc,sc8541,vbus-ovp-alm = <80>;
+		sc,sc8541,ibus-ocp-dis = <0>;
+		sc,sc8541,ibus-ocp = <13>;
+		sc,sc8541,tshut-dis = <1>;
+		sc,sc8541,tsbus-flt-dis = <1>;
+		sc,sc8541,tsbat-flt-dis = <1>;
+		sc,sc8541,tdie-alm = <200>;
+		sc,sc8541,tsbus-flt = <21>;
+		sc,sc8541,tsbat-flt = <21>;
+		sc,sc8541,vac1-ovp = <3>;
+		sc,sc8541,vac2-ovp = <3>;
+		sc,sc8541,vac1-pd-en = <0>;
+		sc,sc8541,vac2-pd-en = <0>;
+		sc,sc8541,fsw-set = <4>;
+		sc,sc8541,wd-timeout = <0>;
+		sc,sc8541,wd-timeout-dis = <1>;
+		sc,sc8541,ibat-sns-r = <0>;
+		sc,sc8541,ss-timeout = <7>;
+		sc,sc8541,ibus-ucp-fall-dg = <1>;
+		sc,sc8541,vout-ovp-dis = <0>;
+		sc,sc8541,ms = <0>;
+		sc,sc8541,vout-ovp = <3>;
+		sc,sc8541,pmid2out-uvp = <7>;
+		sc,sc8541,pmid2out-ovp = <7>;
+	};
+
+	bq25960_standalone: bq25960@65 {
+		compatible = "bq,bq25960-standalone";
+		#io-channel-cells = <1>;
+		status = "ok";
+		dep-supply = <&qupv3_se1_i2c>;
+		reg = <0x65>;
+		bq25960,intr_gpio = <&tlmm 84 0>;
+		charger_name = "primary_dvchg";
+		bq,bq25960,vbat-ovp-dis = <0>;
+		bq,bq25960,vbat-ovp = <127>;
+		bq,bq25960,vbat-ovp-alm-dis = <1>;
+		bq,bq25960,vbat-ovp-alm = <122>;
+		bq,bq25960,ibat-ocp-dis = <0>;
+		bq,bq25960,ibat-ocp = <61>;
+		bq,bq25960,ibat-ocp-alm-dis = <1>;
+		bq,bq25960,ibat-ocp-alm = <61>;
+		bq,bq25960,ibus-ucp-dis = <0>;
+		bq,bq25960,ibus-ucp = <0>;
+		bq,bq25960,chg-config-2 = <0>;
+		bq,bq25960,vbus-pd-en = <0>;
+		bq,bq25960,vbus-ovp = <100>;
+		bq,bq25960,vbus-ovp-alm-dis = <0>;
+		bq,bq25960,vbus-ovp-alm = <100>;
+		bq,bq25960,ibus-ocp = <13>;
+		bq,bq25960,tsbus-flt-dis = <1>;
+		bq,bq25960,tsbat-flt-dis = <1>;
+		bq,bq25960,tdie-alm = <200>;
+		bq,bq25960,tsbus-flt = <21>;
+		bq,bq25960,tsbat-flt = <21>;
+		bq,bq25960,vac1-ovp = <3>;
+		bq,bq25960,vac2-ovp = <3>;
+		bq,bq25960,vac1-pd-en = <0>;
+		bq,bq25960,vac2-pd-en = <0>;
+		bq,bq25960,fsw-set = <4>;
+		bq,bq25960,wd-timeout = <0>;
+		bq,bq25960,wd-timeout-dis = <1>;
+		bq,bq25960,ibat-sns-r = <0>;
+		bq,bq25960,ss-timeout = <5>;
+		bq,bq25960,ibus-ucp-fall-dg = <1>;
+		bq,bq25960,vout-ovp-dis = <0>;
+		bq,bq25960,ms = <0>;
+		bq,bq25960,vout-ovp = <3>;
+	};
+};
+
+&usb0 {
+	extcon = <&pm7250b_pdphy &pm7250b_charger &eud>;
+};

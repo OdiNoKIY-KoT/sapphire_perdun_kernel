@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * khaje WLAN (icnss / WCN3990) base overlay
+ *
+ * Reconstructed from the stock Redmi Note 13 4G (sapphire) vendor_boot DTB
+ * (HyperOS OS2.0.215.0.VNHEUXM): the Qualcomm "wlan-devicetree" techpack
+ * devicetree is not published, so this overlay was rebuilt from the nodes
+ * and properties it contributes to the merged khaje base DTB.  It is applied
+ * onto qcom/khaje.dtb with fdtoverlay, as kernel_platform merge_dtbs.py does.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	qcom,msm-id = <518 0x10000>, <586 0x10000>;
+	qcom,board-id = <0 0>;
+};
+
+&soc {
+	icnss: qcom,icnss@C800000 {
+		compatible = "qcom,icnss";
+		reg = <0xc800000 0x800000 0xb0000000 0x10000>;
+		reg-names = "membase", "smmu_iova_ipa";
+		iommus = <&apps_smmu 416 1>;
+		interrupts = <GIC_SPI 358 IRQ_TYPE_LEVEL_HIGH GIC_SPI 359 IRQ_TYPE_LEVEL_HIGH GIC_SPI 360 IRQ_TYPE_LEVEL_HIGH GIC_SPI 361 IRQ_TYPE_LEVEL_HIGH
+		              GIC_SPI 362 IRQ_TYPE_LEVEL_HIGH GIC_SPI 363 IRQ_TYPE_LEVEL_HIGH GIC_SPI 364 IRQ_TYPE_LEVEL_HIGH GIC_SPI 365 IRQ_TYPE_LEVEL_HIGH
+		              GIC_SPI 366 IRQ_TYPE_LEVEL_HIGH GIC_SPI 367 IRQ_TYPE_LEVEL_HIGH GIC_SPI 368 IRQ_TYPE_LEVEL_HIGH GIC_SPI 369 IRQ_TYPE_LEVEL_HIGH>;
+		qcom,wlan-msa-fixed-region = <&wlan_msa_mem>;
+		qcom,wlan;
+		qcom,iommu-dma-addr-pool = <0xa0000000 0x10000000>;
+		qcom,iommu-dma = "fastmap";
+		qcom,iommu-faults = "stall-disable", "HUPCF";
+		qcom,iommu-geometry = <0xa0000000 0x10010000>;
+		vdd-cx-mx-supply = <&pm6125_l8>;
+		vdd-1.8-xo-supply = <&pm6125_l16>;
+		vdd-1.3-rfa-supply = <&pm6125_l17>;
+		vdd-3.3-ch0-supply = <&pm6125_l23>;
+		qcom,vdd-cx-mx-config = <640000 640000>;
+		qcom,vdd-3.3-ch0-config = <3000000 3312000>;
+		qcom,smp2p_map_wlan_1_in {
+			interrupt-names = "qcom,smp2p-force-fatal-error", "qcom,smp2p-early-crash-ind";
+			interrupts-extended = <&smp2p_wlan_1_in 0 0 &smp2p_wlan_1_in 1 0>;
+		};
+	};
+};

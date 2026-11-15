@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Redmi Note 13 4G - sapphire (no NFC) (board-id 0x20022)
+ *
+ * Kernel board overlay, laid out like Xiaomi's creek-sm6225-overlay.dts.
+ * Reconstructed from the stock dtbo.img entry 45; merged at build time with
+ * the camera/audio/display/touch techpack overlays (see build.sh).
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/qcom,gcc-khaje.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+#include "sapphire-sm6225.dtsi"
+#include "sapphire-pm7250b.dtsi"
+#include "sapphire-battery-auth.dtsi"
+#include "sapphire-charger.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. Khaje IDP sapphire";
+	compatible = "qcom,khaje-idp", "qcom,khaje", "qcom,idp";
+	qcom,msm-id = <0x24a 0x10000 0x206 0x10000>;
+	qcom,board-id = <0x20022 0x0>;
+	qcom,pmic-id = <0x2d 0x2e 0x0 0x0>;
+};
+
+&sdhc_2 {
+	cd-gpios = <&tlmm 88 0>;
+};
+
+&soc {
+	simtray {
+		compatible = "xiaomi,simtray-status";
+		status-gpio = <&tlmm 79 0>;
+	};
+
+	thermal_message: thermal-message {
+		board-sensor = "VIRTUAL-SENSOR";
+	};
+};
+
+&qupv3_se4_2uart {
+	status = "ok";
+};
+

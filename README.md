@@ -42,7 +42,7 @@ phandle cells resolved to node paths (exact reference positions from a `dtc
 -L` build of our sources plus the applied overlays), overlays after
 normalising fragments/targets/fixups, and the bootloader view (dtbo #45/#46
 applied onto both khaje DTBs with fdtoverlay). Current result: all 6 DTBs,
-all 47 DTBO entries and the 4 applied combinations are equivalent; 20 DTBO
+all 47 DTBO entries and the 4 applied combinations are equivalent; 22 DTBO
 entries and dtb #3 are even byte-identical. Remaining non-semantic
 differences: phandle numbering of a few nodes, node/property order, FDT
 string-table layout.

@@ -27,6 +27,7 @@
 #endif
 
 /* Host UIC error code PHY adapter layer */
+#ifndef UFS_QCOM_XIAOMI_STATS	/* defined by our ufs-qcom.h */
 enum ufshcd_ec_pa {
 	UFS_EC_PA_LANE_0,
 	UFS_EC_PA_LANE_1,
@@ -69,6 +70,8 @@ struct ufs_uic_stats {
  * (sky-t-oss drivers/scsi/ufs/ufs-qcom.h): only the members up to ufs_stats
  * are accessed here.
  */
+#endif
+
 struct mi_ufs_qcom_host {
 	u32 caps;
 	struct phy *generic_phy;
@@ -81,6 +84,7 @@ struct mi_ufs_qcom_host {
 /*
  * customer debug interface (exported by the Xiaomi ufs_qcom.ko)
  */
+#ifndef UFS_QCOM_XIAOMI_STATS
 struct UFS_ERR_STATE_DEBUG {
 	u64 err_occurred; /*if happend err*/
 	char err_reason[10][32]; /*err reason*/
@@ -91,6 +95,8 @@ struct UFS_DATA {
 };
 
 struct UFS_DATA *get_ufs_data(void);
+#endif
+
 
 /* ufshcd_get_variant() as carried by the sapphire mi_ufshcd.h copy */
 static inline void *mi_ufshcd_get_variant(struct ufs_hba *hba)

@@ -18,4 +18,5 @@ ccflags-y += -I$(srctree)/drivers/scsi/ufs
 ccflags-y += -fmacro-prefix-map=$(src)/=drivers/misc/mi-memory/../../scsi/mi_ufs/
 
 # get_ufs_data() is exported by the Xiaomi ufs_qcom.ko (stock CRC)
-KBUILD_EXTRA_SYMBOLS += $(KBUILD_EXTMOD)/ufs_qcom_xiaomi.symvers
+# get_ufs_data now comes from our ufs_qcom (msm-kernel out/Module.symvers)
+# KBUILD_EXTRA_SYMBOLS += $(KBUILD_EXTMOD)/ufs_qcom_xiaomi.symvers

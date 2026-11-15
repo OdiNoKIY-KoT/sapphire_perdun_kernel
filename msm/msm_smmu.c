@@ -31,6 +31,7 @@
 #include "msm_gem.h"
 #include "msm_mmu.h"
 #include "sde_dbg.h"
+#include "mi_disp_event.h"
 
 struct msm_smmu_client {
 	struct device *dev;
@@ -453,11 +454,16 @@ static int msm_smmu_fault_handler(struct iommu_domain *domain,
 	struct msm_smmu_client *client;
 	int rc = -EINVAL;
 
+	struct mi_event_info mi_event = {
+		.event_type = MI_EVENT_SMMU_FAULT,
+	};
+
 	if (!token) {
 		DRM_ERROR("Error: token is NULL\n");
 		return -EINVAL;
 	}
 
+	mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 	client = (struct msm_smmu_client *)token;
 
 	/* see iommu.h for fault flags definition */

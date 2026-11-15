@@ -34,6 +34,7 @@
 #include "sde_hw_ctl.h"
 #include "sde_hw_dspp.h"
 #include "sde_crtc.h"
+#include "mi_disp_event.h"
 #include "sde_plane.h"
 #include "sde_hw_util.h"
 #include "sde_hw_catalog.h"
@@ -3103,6 +3104,12 @@ static void sde_crtc_frame_event_work(struct kthread_work *work)
 					| SDE_ENCODER_FRAME_EVENT_PANEL_DEAD
 					| SDE_ENCODER_FRAME_EVENT_DONE))) {
 		if (atomic_read(&sde_crtc->frame_pending) < 1) {
+			struct mi_event_info mi_event = {
+				.event_type = MI_EVENT_INVALID_FRAME_PENDING,
+				.event_type_param1 = atomic_read(&sde_crtc->frame_pending),
+			};
+
+			mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 			/* this should not happen */
 			SDE_ERROR("crtc%d ts:%lld invalid frame_pending:%d\n",
 					crtc->base.id,

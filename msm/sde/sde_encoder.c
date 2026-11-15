@@ -46,6 +46,11 @@
 #include "sde_vm.h"
 #include "sde_fence.h"
 
+#include "dsi_panel.h"
+#include "dsi_display.h"
+#include "dsi_drm.h"
+#include "mi_disp_event.h"
+
 #define SDE_DEBUG_ENC(e, fmt, ...) SDE_DEBUG("enc%d " fmt,\
 		(e) ? (e)->base.base.id : -1, ##__VA_ARGS__)
 
@@ -135,6 +140,93 @@ enum sde_enc_rc_events {
 	SDE_ENC_RC_EVENT_ENTER_IDLE,
 	SDE_ENC_RC_EVENT_EARLY_WAKEUP,
 };
+
+/*
+ * LQ LCM (sapphire): poll the master interface line counter until the
+ * scanout is inside the active region, so that the panel fps command set is
+ * sent outside of the vertical blanking. Returns the number of 50us polls
+ * waited, -EINVAL on timeout.
+ */
+#define SDE_ENC_WAIT_ACTIVE_RETRY	6000
+
+int sde_encoder_vid_wait_for_active(struct drm_encoder *drm_enc)
+{
+	struct sde_encoder_virt *sde_enc;
+	struct sde_encoder_phys *phys;
+	struct drm_display_mode *mode;
+	u32 ln_cnt, min_ln_cnt, active_lns_cnt;
+	int i, retry = SDE_ENC_WAIT_ACTIVE_RETRY, count = 0;
+
+	if (!drm_enc) {
+		SDE_ERROR("invalid encoder\n");
+		return -EINVAL;
+	}
+
+	sde_enc = to_sde_encoder_virt(drm_enc);
+	for (i = 0; i < sde_enc->num_phys_encs; i++) {
+		phys = sde_enc->phys_encs[i];
+		if (!phys)
+			continue;
+		if (phys->ops.is_master && !phys->ops.is_master(phys))
+			continue;
+
+		mode = &phys->cached_mode;
+		min_ln_cnt = (mode->vtotal - mode->vsync_start) +
+				(mode->vsync_end - mode->vsync_start);
+		active_lns_cnt = mode->vdisplay;
+		while (retry) {
+			ln_cnt = phys->ops.get_line_count(phys);
+			if ((ln_cnt >= min_ln_cnt) &&
+					(ln_cnt < (active_lns_cnt + min_ln_cnt)))
+				return count;
+			count++;
+			udelay(50);
+			retry--;
+		}
+	}
+
+	return -EINVAL;
+}
+
+/* same as above, but only accept the first 1/8 of the active region */
+int sde_encoder_hight_wait_for_active(struct drm_encoder *drm_enc)
+{
+	struct sde_encoder_virt *sde_enc;
+	struct sde_encoder_phys *phys;
+	struct drm_display_mode *mode;
+	u32 ln_cnt, min_ln_cnt, active_lns_cnt;
+	int i, retry = SDE_ENC_WAIT_ACTIVE_RETRY, count = 0;
+
+	if (!drm_enc) {
+		SDE_ERROR("invalid encoder\n");
+		return -EINVAL;
+	}
+
+	sde_enc = to_sde_encoder_virt(drm_enc);
+	for (i = 0; i < sde_enc->num_phys_encs; i++) {
+		phys = sde_enc->phys_encs[i];
+		if (!phys)
+			continue;
+		if (phys->ops.is_master && !phys->ops.is_master(phys))
+			continue;
+
+		mode = &phys->cached_mode;
+		min_ln_cnt = (mode->vtotal - mode->vsync_start) +
+				(mode->vsync_end - mode->vsync_start);
+		active_lns_cnt = mode->vdisplay / 8;
+		while (retry) {
+			ln_cnt = phys->ops.get_line_count(phys);
+			if ((ln_cnt >= min_ln_cnt) &&
+					(ln_cnt < (active_lns_cnt + min_ln_cnt)))
+				return count;
+			count++;
+			udelay(50);
+			retry--;
+		}
+	}
+
+	return -EINVAL;
+}
 
 void sde_encoder_uidle_enable(struct drm_encoder *drm_enc, bool enable)
 {
@@ -3560,6 +3652,16 @@ static void sde_encoder_underrun_callback(struct drm_encoder *drm_enc,
 	SDE_ATRACE_BEGIN("encoder_underrun_callback");
 	atomic_inc(&phy_enc->underrun_cnt);
 	SDE_EVT32(DRMID(drm_enc), atomic_read(&phy_enc->underrun_cnt));
+	SDE_ERROR("%s underrun count %d!\n", drm_enc ? drm_enc->name : "null",
+			atomic_read(&phy_enc->underrun_cnt));
+	if (drm_enc && sde_enc->disp_info.intf_type == DRM_MODE_CONNECTOR_DSI &&
+			to_sde_connector(phy_enc->connector)->display) {
+		struct mi_event_info event_info = {
+			.event_type = MI_EVENT_PANEL_UNDERRUN,
+		};
+
+		mi_disp_mievent_int(MI_DISP_PRIMARY, &event_info);
+	}
 	if (sde_enc->cur_master &&
 			sde_enc->cur_master->ops.get_underrun_line_count)
 		sde_enc->cur_master->ops.get_underrun_line_count(
@@ -4633,6 +4735,8 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool config_changed)
 	struct sde_encoder_phys *phys;
 	struct sde_kms *sde_kms;
 	unsigned int i;
+	struct sde_connector *sde_conn;
+	struct dsi_display *display;
 
 	if (!drm_enc) {
 		SDE_ERROR("invalid encoder\n");
@@ -4641,7 +4745,25 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool config_changed)
 	SDE_ATRACE_BEGIN("encoder_kickoff");
 	sde_enc = to_sde_encoder_virt(drm_enc);
 
+	sde_conn = to_sde_connector(sde_enc->cur_master->connector);
+	if (!sde_conn)
+		SDE_ERROR("fps sde_encoder_kickoff sde_conn is null\n");
+	/* fixed: stock dereferenced sde_conn even when NULL */
+	display = sde_conn ? sde_conn->display : NULL;
+	if (!display)
+		SDE_ERROR("fps sde_encoder_kickoff display is null\n");
+
 	SDE_DEBUG_ENC(sde_enc, "\n");
+
+	if (sde_enc->disp_info.intf_type == DRM_MODE_CONNECTOR_DSI) {
+		struct drm_bridge *bridge = drm_bridge_chain_get_first_bridge(drm_enc);
+
+		if (!bridge) {
+			DSI_DEBUG("bridge is not available\n");
+			return;
+		}
+		display = container_of(bridge, struct dsi_bridge, base)->display;
+	}
 
 	if (sde_enc->delay_kickoff) {
 		u32 loop_count = 20;
@@ -4665,6 +4787,21 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool config_changed)
 
 	if (sde_enc->cur_master)
 		_sde_encoder_update_retire_txq(sde_enc->cur_master, sde_kms);
+
+	/*
+	 * LQ LCM (sapphire): the panel fps command set must follow the
+	 * timing switch; send it at the start of the active region.
+	 */
+	if (display && display->panel && display->panel->panel_initialized) {
+		struct dsi_panel *panel = display->panel;
+		u32 fps = panel->cur_mode->timing.refresh_rate;
+
+		if ((panel->dsi_refresh_flag != 120 && fps != panel->dsi_refresh_flag) ||
+				(panel->dsi_refresh_flag == 120 && fps != 120)) {
+			sde_encoder_hight_wait_for_active(drm_enc);
+			dsi_set_panel_fps_cmd(panel, panel->cur_mode);
+		}
+	}
 
 	/* All phys encs are ready to go, trigger the kickoff */
 	_sde_encoder_kickoff_phys(sde_enc, config_changed);

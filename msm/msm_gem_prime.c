@@ -30,6 +30,7 @@
 #include <linux/ion.h>
 #include <linux/msm_ion.h>
 #endif
+#include "mi_disp_event.h"
 
 struct sg_table *msm_gem_prime_get_sg_table(struct drm_gem_object *obj)
 {
@@ -179,7 +180,13 @@ struct drm_gem_object *msm_gem_prime_import(struct drm_device *dev,
 		attach->dma_map_attrs |= DMA_ATTR_DELAYED_UNMAP;
 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
 	if (IS_ERR(sgt)) {
+		struct mi_event_info mi_event = {
+			.event_type = MI_EVENT_DMA_BUF_ALLOCATE_FAILED,
+		};
+
 		ret = PTR_ERR(sgt);
+		mi_event.event_type_param1 = ret;
+		mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 		DRM_ERROR(
 		"dma_buf_map_attachment failure, err=%d\n", ret);
 		goto fail_detach;

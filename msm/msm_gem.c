@@ -31,6 +31,7 @@
 #include "msm_gem.h"
 #include "msm_mmu.h"
 #include "sde_dbg.h"
+#include "mi_disp_event.h"
 
 #define GUARD_BYTES (BIT(8) - 1)
 #define ALIGNED_OFFSET (U32_MAX & ~(GUARD_BYTES))
@@ -352,8 +353,14 @@ dma_addr_t msm_gem_get_dma_addr(struct drm_gem_object *obj)
 		sgt = dma_buf_map_attachment(obj->import_attach,
 						DMA_BIDIRECTIONAL);
 		if (IS_ERR_OR_NULL(sgt)) {
+			struct mi_event_info mi_event = {
+				.event_type = MI_EVENT_DMA_BUF_ALLOCATE_FAILED,
+				.event_type_param1 = PTR_ERR(sgt),
+			};
+
 			DRM_ERROR("dma_buf_map_attachment failure, err=%ld\n",
 					PTR_ERR(sgt));
+			mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 			return 0;
 		}
 		msm_obj->sgt = sgt;
@@ -1154,7 +1161,13 @@ int msm_gem_delayed_import(struct drm_gem_object *obj)
 	 */
 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
 	if (IS_ERR(sgt)) {
+		struct mi_event_info mi_event = {
+			.event_type = MI_EVENT_DMA_BUF_ALLOCATE_FAILED,
+		};
+
 		ret = PTR_ERR(sgt);
+		mi_event.event_type_param1 = ret;
+		mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 		DRM_ERROR("dma_buf_map_attachment failure, err=%d\n",
 				ret);
 		goto fail_import;

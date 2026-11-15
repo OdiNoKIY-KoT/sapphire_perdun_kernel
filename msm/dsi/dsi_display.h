@@ -846,6 +846,11 @@ bool dsi_display_mode_match(const struct dsi_display_mode *mode1,
  */
 int dsi_display_update_transfer_time(void *display, u32 transfer_time);
 
+/* LQ.LCM - 2023.2.7 - transplant mi disp from zeus start */
+char *mi_dsi_display_get_cmdline_panel_info(struct dsi_display *display);
+int dsi_display_cmd_rx(struct dsi_display *display, struct dsi_cmd_desc *cmd);
+int dsi_display_ctrl_get_host_init_state(struct dsi_display *dsi_display, bool *state);
+/* 2023.2.7 - end modify */
 /**
  * dsi_display_set_clk_src() - set the clocks source
  * @display:         handle to display

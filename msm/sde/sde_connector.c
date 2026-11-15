@@ -22,6 +22,12 @@
 #include <drm/drm_probe_helper.h>
 #include <linux/version.h>
 
+#include "mi_disp_feature.h"
+#include "mi_disp_event.h"
+#include "mi_dsi_display.h"
+#include "mi_disp_lhbm.h"
+#include "mi_sde_connector.h"
+
 #define BL_NODE_NAME_SIZE 32
 #define HDR10_PLUS_VSIF_TYPE_CODE      0x81
 
@@ -33,6 +39,10 @@
 
 #define SDE_ERROR_CONN(c, fmt, ...) SDE_ERROR("conn%d " fmt,\
 		(c) ? (c)->base.base.id : -1, ##__VA_ARGS__)
+
+#if IS_ENABLED(CONFIG_FACTORY_BUILD)
+#define DISABLE_ESD
+#endif
 
 static const struct drm_prop_enum_list e_topology_name[] = {
 	{SDE_RM_TOPOLOGY_NONE,	"sde_none"},
@@ -239,7 +249,8 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	props.type = BACKLIGHT_RAW;
 	props.power = FB_BLANK_UNBLANK;
 	props.max_brightness = bl_config->brightness_max_level;
-	props.brightness = bl_config->brightness_max_level;
+	/* Xiaomi: boot with qcom,mdss-brightness-init-level instead of max */
+	props.brightness = bl_config->brightness_init_level;
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev, c_conn,
@@ -1161,6 +1172,11 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 		c_conn->bl_device->props.state &= ~BL_CORE_FBBLANK;
 		backlight_update_status(c_conn->bl_device);
 	}
+
+	/* Xiaomi: allow pending LHBM (FOD) and doze requests once the panel is on */
+	if (display && mi_disp_lhbm_fod_enabled(display->panel))
+		mi_disp_lhbm_fod_allow_tx_lhbm(display, true);
+	mi_dsi_display_wakeup_pending_doze_work(display);
 }
 
 int sde_connector_clk_ctrl(struct drm_connector *connector, bool enable)
@@ -2727,7 +2743,53 @@ static int sde_connector_atomic_check(struct drm_connector *connector,
 	return 0;
 }
 
-static void _sde_connector_report_panel_dead(struct sde_connector *conn,
+#ifndef DISABLE_ESD
+/* BSP.LCM  modify to add esd irq (qcom,esd-err-irq-gpio, active low) */
+static irqreturn_t esd_err_irq_handle(int irq, void *data)
+{
+	struct sde_connector *c_conn = data;
+	struct dsi_display *dsi_display;
+	struct drm_event event;
+	bool panel_on = false;
+	char err_irq_gpio_status = 1;
+
+	/* fixed: stock tested "!c_conn && !c_conn->display" (NULL deref) */
+	if (!c_conn || !c_conn->display) {
+		SDE_ERROR("not able to get connector object\n");
+		return IRQ_HANDLED;
+	}
+	dsi_display = (struct dsi_display *)(c_conn->display);
+
+	if (c_conn->connector_type == DRM_MODE_CONNECTOR_DSI) {
+		if (dsi_display->panel && dsi_display->panel->esd_config.esd_err_irq_gpio > 0) {
+			panel_on = dsi_display->panel->panel_initialized;
+			err_irq_gpio_status = gpio_get_value(dsi_display->panel->esd_config.esd_err_irq_gpio);
+		}
+	}
+
+	if (panel_on && (c_conn->panel_dead == false) && err_irq_gpio_status == 0) {
+		struct mi_event_info esd_event = {
+			.event_type = mi_disp_event_id(dsi_display->display_type) == MI_DISP_PRIMARY ?
+					MI_EVENT_PRI_PANEL_IRQ_ESD : MI_EVENT_SEC_PANEL_IRQ_ESD,
+		};
+
+		SDE_ERROR("esd check irq report PANEL_DEAD conn_id: %d enc_id: %d, panel_status[%d]\n",
+			c_conn->base.base.id, c_conn->encoder->base.id, panel_on);
+		mi_disp_mievent_int(mi_disp_event_id(dsi_display->display_type), &esd_event);
+		dsi_display->panel->panel_status = true;
+		c_conn->panel_dead = true;
+		event.type = DRM_EVENT_PANEL_DEAD;
+		event.length = sizeof(bool);
+		msm_mode_object_event_notify(&c_conn->base.base,
+			c_conn->base.dev, &event, (u8 *)&c_conn->panel_dead);
+		sde_encoder_display_failure_notification(c_conn->encoder, false);
+	}
+	return IRQ_HANDLED;
+}
+/*end modify*/
+#endif
+
+void _sde_connector_report_panel_dead(struct sde_connector *conn,
 	bool skip_pre_kickoff)
 {
 	struct drm_event event;
@@ -2808,6 +2870,14 @@ int sde_connector_esd_status(struct drm_connector *conn)
 	if (ret <= 0) {
 		/* cancel if any pending esd work */
 		sde_connector_schedule_status_work(conn, false);
+		{
+			struct mi_event_info mi_event = {
+				.event_type = mi_disp_event_id(display->display_type) == MI_DISP_PRIMARY ?
+					MI_EVENT_PRI_PLATFORM_ESD : MI_EVENT_SEC_PLATFORM_ESD,
+			};
+
+			mi_disp_mievent_int(mi_disp_event_id(display->display_type), &mi_event);
+		}
 		_sde_connector_report_panel_dead(sde_conn, true);
 		ret = -ETIMEDOUT;
 	} else {
@@ -3351,6 +3421,9 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 	struct sde_connector *c_conn = NULL;
 	struct msm_display_info display_info;
 	int rc;
+#ifndef DISABLE_ESD
+	struct dsi_display *dsi_display;
+#endif
 
 	if (!dev || !dev->dev_private || !encoder) {
 		SDE_ERROR("invalid argument(s), dev %pK, enc %pK\n",
@@ -3456,6 +3529,28 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 			goto error_cleanup_fence;
 		}
 	}
+
+#ifndef DISABLE_ESD
+/* modify to add esd irq */
+	if (connector_type == DRM_MODE_CONNECTOR_DSI) {
+			dsi_display = (struct dsi_display *)(display);
+			/* register esd irq and enable it after panel enabled */
+		if (dsi_display && dsi_display->panel &&
+			dsi_display->panel->esd_config.esd_err_irq_gpio > 0) {
+			rc = request_threaded_irq(dsi_display->panel->esd_config.esd_err_irq,
+							NULL, esd_err_irq_handle,
+							dsi_display->panel->esd_config.esd_err_irq_flags,
+							"esd_err_irq", c_conn);
+			if (rc < 0) {
+				pr_err("%s: request irq %d failed\n", __func__, dsi_display->panel->esd_config.esd_err_irq);
+				dsi_display->panel->esd_config.esd_err_irq = 0;
+			} else {
+				pr_info("%s: Request esd irq succeed!\n", __func__);
+			}
+		}
+	}
+/*end modify*/
+#endif
 
 	rc = sde_connector_get_info(&c_conn->base, &display_info);
 	if (!rc && (connector_type == DRM_MODE_CONNECTOR_DSI) &&

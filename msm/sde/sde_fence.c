@@ -11,6 +11,7 @@
 #include "msm_drv.h"
 #include "sde_kms.h"
 #include "sde_fence.h"
+#include "mi_disp_event.h"
 
 #define TIMELINE_VAL_LENGTH		128
 #define SPEC_FENCE_FLAG_FENCE_ARRAY	0x10
@@ -919,11 +920,18 @@ void sde_fence_signal(struct sde_fence_context *ctx, ktime_t ts,
 		SDE_DEBUG("fence_signal:done count:%d commit count:%d\n",
 					ctx->done_count, ctx->commit_count);
 	} else {
+		struct mi_event_info mi_event = {
+			.event_type = MI_EVENT_FENCE_SIGNAL_ERR,
+			.event_type_param1 = ctx->done_count,
+			.event_type_param2 = ctx->commit_count,
+		};
+
 		SDE_ERROR("extra signal attempt! done count:%d commit:%d\n",
 					ctx->done_count, ctx->commit_count);
 		SDE_EVT32(ctx->drm_id, ctx->done_count, ctx->commit_count,
 			ktime_to_us(ts), fence_event, SDE_EVTLOG_FATAL);
 		spin_unlock_irqrestore(&ctx->lock, flags);
+		mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 		return;
 	}
 	spin_unlock_irqrestore(&ctx->lock, flags);

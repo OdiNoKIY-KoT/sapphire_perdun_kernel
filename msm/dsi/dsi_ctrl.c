@@ -22,6 +22,7 @@
 #include "dsi_panel.h"
 
 #include "sde_dbg.h"
+#include "mi_disp_event.h"
 
 #define DSI_CTRL_DEFAULT_LABEL "MDSS DSI CTRL"
 
@@ -382,6 +383,13 @@ static void dsi_ctrl_dma_cmd_wait_for_done(struct dsi_ctrl *dsi_ctrl)
 			SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_ERROR);
 			DSI_CTRL_ERR(dsi_ctrl,
 					"Command transfer failed\n");
+		}
+		{
+			struct mi_event_info mi_event = {
+				.event_type = MI_EVENT_DMA_CMD_TIMEOUT,
+			};
+
+			mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
 		}
 		dsi_ctrl_disable_status_interrupt(dsi_ctrl,
 					DSI_SINT_CMD_MODE_DMA_DONE);

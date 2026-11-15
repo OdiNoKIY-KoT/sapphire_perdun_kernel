@@ -19,6 +19,7 @@
 #include "sde_core_irq.h"
 #include "dsi_panel.h"
 #include "sde_hw_color_proc_common_v4.h"
+#include "mi_disp_event.h"
 
 struct sde_cp_node {
 	u32 property_id;
@@ -249,11 +250,22 @@ static int _set_dspp_pcc_feature(struct sde_hw_dspp *hw_dspp,
 				struct sde_crtc *hw_crtc)
 {
 	int ret = 0;
+	struct drm_msm_pcc *pcc_cfg;
 
 	if (!hw_dspp || !hw_dspp->ops.setup_pcc)
 		ret = -EINVAL;
 	else
 		hw_dspp->ops.setup_pcc(hw_dspp, hw_cfg);
+
+	/* Xiaomi: report an all-zero PCC (black screen) to MiSight */
+	pcc_cfg = hw_cfg->payload;
+	if (pcc_cfg && !pcc_cfg->r.r && !pcc_cfg->g.g && !pcc_cfg->b.b) {
+		struct mi_event_info mi_event = {
+			.event_type = MI_EVENT_ALL_ZERO_PCC,
+		};
+
+		mi_disp_mievent_int(MI_DISP_PRIMARY, &mi_event);
+	}
 	return ret;
 }
 

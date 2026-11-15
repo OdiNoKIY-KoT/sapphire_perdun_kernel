@@ -240,6 +240,11 @@ enum msm_mdp_conn_property {
 	CONNECTOR_PROP_DSC_MODE,
 	CONNECTOR_PROP_WB_USAGE_TYPE,
 
+/* LQ.LCM - 2023.2.7 - transplant mi disp from zeus start */
+	CONNECTOR_PROP_MI_LAYER_INFO,
+	CONNECTOR_PROP_QSYNC_MIN_FPS_INDEX,
+/* LQ.LCM - 2023.2.7 - end modify */
+
 	/* total # of properties */
 	CONNECTOR_PROP_COUNT
 };

@@ -23,6 +23,11 @@
 #include "dsi_parser.h"
 #include "msm_drv.h"
 
+/* LQ.LCM - 2023.2.7 - transplant mi disp from zeus start */
+#include "mi_dsi_panel.h"
+#include "mi_dsi_panel_count.h"
+/* 2022.2.7 - end modify */
+
 #define MAX_BL_LEVEL 4096
 #define MAX_BL_SCALE_LEVEL 1024
 #define MAX_SV_BL_SCALE_LEVEL 65535
@@ -129,12 +134,15 @@ struct dsi_backlight_config {
 	u32 bl_min_level;
 	u32 bl_max_level;
 	u32 brightness_max_level;
+	/* Xiaomi: qcom,mdss-brightness-init-level */
+	u32 brightness_init_level;
 	/* current brightness value */
 	u32 brightness;
 	u32 bl_level;
 	u32 bl_scale;
 	u32 bl_scale_sv;
 	bool bl_inverted_dbv;
+
 	/* digital dimming backlight LUT */
 	struct drm_msm_dimming_bl_lut *dimming_bl_lut;
 	u32 dimming_min_bl;
@@ -190,6 +198,10 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
+	/* Xiaomi: qcom,esd-err-irq-gpio */
+	int esd_err_irq_gpio;
+	int esd_err_irq;
+	int esd_err_irq_flags;
 };
 
 struct dsi_panel_spr_info {
@@ -276,6 +288,16 @@ struct dsi_panel {
 	enum dsi_panel_physical_type panel_type;
 
 	struct dsi_panel_ops panel_ops;
+
+	bool panel_status;
+	u32 dsi_refresh_flag;
+/* LQ.LCM - 2023.2.7 - transplant mi disp from zeus start */
+	struct drm_panel_build_id_config id_config;
+	struct drm_panel_wp_config wp_config;
+	struct mi_dsi_panel_cfg mi_cfg;
+	struct mi_dsi_panel_count mi_count;
+	bool qsync_enable;
+/* LQ.LCM - 2023.2.7 - end modify */
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -412,4 +434,16 @@ int dsi_panel_create_cmd_packets(const char *data, u32 length, u32 count,
 void dsi_panel_destroy_cmd_packets(struct dsi_panel_cmd_set *set);
 
 void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
+
+/* xiaomi add start */
+int dsi_panel_parse_cmd_sets_sub(struct dsi_panel_cmd_set *cmd,
+					enum dsi_cmd_set_type type,
+					struct dsi_parser_utils *utils);
+int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
+		enum dsi_cmd_set_type type);
+int dsi_panel_update_backlight(struct dsi_panel *panel, u32 bl_lvl);
+/* xiaomi add end */
+
+void dsi_set_panel_fps_cmd(struct dsi_panel *panel,
+			 struct dsi_display_mode *adj_mode);
 #endif /* _DSI_PANEL_H_ */

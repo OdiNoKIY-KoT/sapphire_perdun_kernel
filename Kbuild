@@ -184,7 +184,8 @@ camera-$(CONFIG_SPECTRA_SENSOR) += \
 	drivers/cam_sensor_module/cam_res_mgr/cam_res_mgr.o \
 	drivers/cam_sensor_module/cam_flash/cam_flash_dev.o \
 	drivers/cam_sensor_module/cam_flash/cam_flash_core.o \
-	drivers/cam_sensor_module/cam_flash/cam_flash_soc.o
+	drivers/cam_sensor_module/cam_flash/cam_flash_soc.o \
+	drivers/leds/leds-msm-back-gpio-flash.o
 
 camera-$(CONFIG_LEDS_QPNP_FLASH_V2) += \
 	drivers/cam_sensor_module/cam_flash/cam_flash_dev.o \
@@ -231,9 +232,7 @@ camera-$(CONFIG_SPECTRA_TFE) += \
 	drivers/cam_isp/isp_hw_mgr/isp_hw/tfe_csid_hw/cam_tfe_csid530.o \
 	drivers/cam_isp/isp_hw_mgr/cam_tfe_hw_mgr.o
 
-
-camera-y += drivers/camera_main.o \
-	drivers/wl2866d/wl2866d.o
+camera-y += drivers/camera_main.o
 
 obj-m += camera.o
 BOARD_VENDOR_KERNEL_MODULES += $(KERNEL_MODULES_OUT)/camera.ko

@@ -192,6 +192,8 @@ struct cam_flash_func_tbl {
  * @last_flush_req      : last request to flush
  * @streamoff_count     : Count to hold the number of times stream off called
  * @apply_streamoff     : variable to store when to apply stream off
+ * @flash_enm_gpio      : GPIO flash ENM pin (flash-type 2, "enm-gpio")
+ * @flash_enf_gpio      : GPIO flash ENF pin (flash-type 2, "enf-gpio")
  */
 struct cam_flash_ctrl {
 	char device_name[CAM_CTX_DEV_NAME_MAX_LENGTH];
@@ -222,11 +224,11 @@ struct cam_flash_ctrl {
 	uint32_t                            last_flush_req;
 	uint32_t                            streamoff_count;
 	int32_t                             apply_streamoff;
-  	//------add flash node-liyongyi-2022/9/28 start
-	struct led_classdev                 cdev;
-  	//------add flash node-liyongyi-2022/9/28 start
+	int32_t                             flash_enm_gpio;
+	int32_t                             flash_enf_gpio;
 };
 
+int32_t cam_flash_init_default_params(struct cam_flash_ctrl *fctrl);
 int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg);
 int cam_flash_i2c_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg);
 int cam_flash_pmic_apply_setting(struct cam_flash_ctrl *fctrl, uint64_t req_id);

@@ -29,6 +29,19 @@ static int32_t cam_get_source_node_info(
 	if (rc) {
 		CAM_ERR(CAM_FLASH, "flash-type read failed rc=%d", rc);
 		soc_private->flash_type = CAM_FLASH_TYPE_PMIC;
+	} else if (soc_private->flash_type == CAM_FLASH_TYPE_GPIO) {
+		fctrl->flash_enf_gpio = of_get_named_gpio(of_node,
+			"enf-gpio", 0);
+		fctrl->flash_enm_gpio = of_get_named_gpio(of_node,
+			"enm-gpio", 0);
+		rc = gpio_request(fctrl->flash_enf_gpio, "flash_enf_gpio");
+		if (rc < 0)
+			CAM_ERR(CAM_FLASH,
+				"flash_enf_gpio request error rc=%d", rc);
+		rc = gpio_request(fctrl->flash_enm_gpio, "flash_enm_gpio");
+		if (rc < 0)
+			CAM_ERR(CAM_FLASH,
+				"flash_enf_gpio request error rc=%d", rc);
 	}
 
 	switch_src_node = of_parse_phandle(of_node, "switch-source", 0);

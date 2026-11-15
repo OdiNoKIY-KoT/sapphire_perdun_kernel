@@ -9,6 +9,10 @@
 #include <media/cam_sensor.h>
 #include "cam_flash_dev.h"
 
+/* GPIO flash (flash-type 2) pin levels, as used by the stock module */
+#define CAM_FLASH_GPIO_OUT_LOW   (0 << 1)
+#define CAM_FLASH_GPIO_OUT_HIGH  (1 << 1)
+
 int cam_flash_publish_dev_info(struct cam_req_mgr_device_info *info);
 int cam_flash_establish_link(struct cam_req_mgr_core_dev_link_setup *link);
 int cam_flash_apply_request(struct cam_req_mgr_apply_request *apply);

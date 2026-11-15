@@ -142,6 +142,23 @@ TRACE_EVENT(cam_apply_req,
 	)
 );
 
+TRACE_EVENT(cam_notify_frame_skip,
+	TP_PROTO(const char *entity, uint64_t req_id),
+	TP_ARGS(entity, req_id),
+	TP_STRUCT__entry(
+		__string(entity, entity)
+		__field(uint64_t, req_id)
+	),
+	TP_fast_assign(
+		__assign_str(entity, entity);
+		__entry->req_id = req_id;
+	),
+	TP_printk(
+		"%8s: NotifyFrameSkip request=%llu",
+			__get_str(entity), __entry->req_id
+	)
+);
+
 TRACE_EVENT(cam_flush_req,
 	TP_PROTO(struct cam_req_mgr_core_link *link,
 		struct cam_req_mgr_flush_info *info),

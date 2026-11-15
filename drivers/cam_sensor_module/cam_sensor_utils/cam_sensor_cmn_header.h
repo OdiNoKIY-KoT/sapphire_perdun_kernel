@@ -142,10 +142,7 @@ enum msm_camera_power_seq_type {
 	SENSOR_STANDBY,
 	SENSOR_CUSTOM_GPIO1,
 	SENSOR_CUSTOM_GPIO2,
-	SENSOR_WL2866D_DVDD1,
-	SENSOR_WL2866D_DVDD2,
-	SENSOR_WL2866D_AVDD1,
-	SENSOR_WL2866D_AVDD2,
+	SENSOR_CUSTOM_GPIO3,
 	SENSOR_SEQ_TYPE_MAX,
 };
 
@@ -157,6 +154,7 @@ enum cam_sensor_packet_opcodes {
 	CAM_SENSOR_PACKET_OPCODE_SENSOR_CONFIG,
 	CAM_SENSOR_PACKET_OPCODE_SENSOR_STREAMOFF,
 	CAM_SENSOR_PACKET_OPCODE_SENSOR_READ,
+	CAM_SENSOR_PACKET_OPCODE_SENSOR_FRAME_SKIP_UPDATE,
 	CAM_SENSOR_PACKET_OPCODE_SENSOR_NOP = 127
 };
 
@@ -309,6 +307,7 @@ struct i2c_data_settings {
 	struct i2c_settings_array streamoff_settings;
 	struct i2c_settings_array read_settings;
 	struct i2c_settings_array *per_frame;
+	struct i2c_settings_array *frame_skip;
 };
 
 struct cam_sensor_power_ctrl_t {

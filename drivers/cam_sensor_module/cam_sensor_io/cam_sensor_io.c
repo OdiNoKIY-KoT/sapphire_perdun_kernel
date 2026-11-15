@@ -83,7 +83,7 @@ int32_t camera_io_dev_read(struct camera_io_master *io_master_info,
 		return cam_spi_read(io_master_info,
 			addr, data, addr_type, data_type);
 	} else {
-		CAM_ERR(CAM_SENSOR, "Invalid Comm. Master:%d",
+		CAM_DBG(CAM_SENSOR, "Invalid Comm. Master:%d",
 			io_master_info->master_type);
 		return -EINVAL;
 	}

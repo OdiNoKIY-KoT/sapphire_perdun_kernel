@@ -56,6 +56,8 @@ typedef int (*cam_req_mgr_get_dev_info) (struct cam_req_mgr_device_info *);
 typedef int (*cam_req_mgr_link_setup)(
 	struct cam_req_mgr_core_dev_link_setup *);
 typedef int (*cam_req_mgr_apply_req)(struct cam_req_mgr_apply_request *);
+typedef int (*cam_req_mgr_notify_frame_skip)(
+	struct cam_req_mgr_apply_request *);
 typedef int (*cam_req_mgr_flush_req)(struct cam_req_mgr_flush_request *);
 typedef int (*cam_req_mgr_process_evt)(struct cam_req_mgr_link_evt_data *);
 typedef int (*cam_req_mgr_dump_req)(struct cam_req_mgr_dump_info *);
@@ -82,6 +84,7 @@ struct cam_req_mgr_crm_cb {
  * @get_dev_info : payload to fetch device details
  * @link_setup   : payload to establish link with device
  * @apply_req    : payload to apply request id on a device linked
+ * @notify_frame_skip: payload to notify frame skip
  * @flush_req    : payload to flush request
  * @process_evt  : payload to generic event
  * @dump_req     : payload to dump request
@@ -90,6 +93,7 @@ struct cam_req_mgr_kmd_ops {
 	cam_req_mgr_get_dev_info     get_dev_info;
 	cam_req_mgr_link_setup       link_setup;
 	cam_req_mgr_apply_req        apply_req;
+	cam_req_mgr_notify_frame_skip notify_frame_skip;
 	cam_req_mgr_flush_req        flush_req;
 	cam_req_mgr_process_evt      process_evt;
 	cam_req_mgr_dump_req         dump_req;

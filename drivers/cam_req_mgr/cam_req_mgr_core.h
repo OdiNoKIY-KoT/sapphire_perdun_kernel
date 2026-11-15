@@ -281,6 +281,7 @@ struct cam_req_mgr_req_data {
 	struct cam_req_mgr_req_tbl   *l_tbl;
 	int32_t                       num_tbl;
 	struct cam_req_mgr_apply      apply_data[CAM_PIPELINE_DELAY_MAX];
+	struct cam_req_mgr_apply      prev_apply_data[CAM_PIPELINE_DELAY_MAX];
 	struct mutex                  lock;
 };
 

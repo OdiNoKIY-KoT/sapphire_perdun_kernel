@@ -23,6 +23,8 @@ static struct cam_req_mgr_core_link g_links[MAXIMUM_LINKS_PER_SESSION];
 
 void cam_req_mgr_core_link_reset(struct cam_req_mgr_core_link *link)
 {
+	uint32_t pd = 0;
+
 	link->link_hdl = 0;
 	link->num_devs = 0;
 	link->max_delay = CAM_PIPELINE_DELAY_0;
@@ -48,6 +50,11 @@ void cam_req_mgr_core_link_reset(struct cam_req_mgr_core_link *link)
 	link->initial_skip = true;
 	link->sof_timestamp = 0;
 	link->prev_sof_timestamp = 0;
+
+	for (pd = 0; pd < CAM_PIPELINE_DELAY_MAX; pd++) {
+		link->req.apply_data[pd].req_id = -1;
+		link->req.prev_apply_data[pd].req_id = -1;
+	}
 }
 
 void cam_req_mgr_handle_core_shutdown(void)
@@ -211,6 +218,64 @@ static void __cam_req_mgr_find_dev_name(
 					dev->dev_info.name, link->open_req_cnt);
 		}
 	}
+}
+
+/**
+ * __cam_req_mgr_notify_frame_skip()
+ *
+ * @brief : Notify all devices of frame skipping
+ * @link  : link on which we are applying these settings
+ * @trigger : trigger point of the frame being skipped
+ *
+ */
+static int __cam_req_mgr_notify_frame_skip(
+	struct cam_req_mgr_core_link *link,
+	uint32_t trigger)
+{
+	int                                  rc = 0, i, pd, idx;
+	struct cam_req_mgr_apply_request     frame_skip;
+	struct cam_req_mgr_apply            *apply_data = NULL;
+	struct cam_req_mgr_connected_device *dev = NULL;
+	struct cam_req_mgr_tbl_slot         *slot = NULL;
+
+	apply_data = link->req.prev_apply_data;
+
+	for (i = 0; i < link->num_devs; i++) {
+		dev = &link->l_dev[i];
+		if (!dev)
+			continue;
+
+		pd = dev->dev_info.p_delay;
+		if (pd >= CAM_PIPELINE_DELAY_MAX) {
+			CAM_WARN(CAM_CRM, "pd %d greater than max",
+				pd);
+			continue;
+		}
+
+		idx = apply_data[pd].idx;
+		slot = &dev->pd_tbl->slot[idx];
+
+		if ((slot->dev_hdl == dev->dev_hdl) &&
+			(slot->is_applied)) {
+			slot->is_applied = false;
+			continue;
+		}
+
+		frame_skip.dev_hdl = dev->dev_hdl;
+		frame_skip.link_hdl = link->link_hdl;
+		frame_skip.request_id =
+			apply_data[pd].req_id;
+		frame_skip.trigger_point = trigger;
+		frame_skip.report_if_bubble = 0;
+
+		CAM_DBG(CAM_REQ,
+			"Notify_frame_skip: pd %d req_id %lld",
+			link->link_hdl, pd, apply_data[pd].req_id);
+		if ((dev->ops) && (dev->ops->notify_frame_skip))
+			dev->ops->notify_frame_skip(&frame_skip);
+	}
+
+	return rc;
 }
 
 /**
@@ -664,10 +729,17 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 	struct cam_req_mgr_apply_request     apply_req;
 	struct cam_req_mgr_link_evt_data     evt_data;
 	struct cam_req_mgr_tbl_slot          *slot = NULL;
+	struct cam_req_mgr_apply             *apply_data = NULL;
 
 	apply_req.link_hdl = link->link_hdl;
 	apply_req.report_if_bubble = 0;
 
+	apply_data = link->req.apply_data;
+
+	/*
+	 * This For loop is to address the special operation requested
+	 * by device
+	 */
 	for (i = 0; i < link->num_devs; i++) {
 		dev = &link->l_dev[i];
 		if (!dev)
@@ -679,7 +751,7 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 			continue;
 		}
 
-		idx = link->req.apply_data[pd].idx;
+		idx = apply_data[pd].idx;
 		slot = &dev->pd_tbl->slot[idx];
 		/*
 		 * Just let flash go for this request and other
@@ -695,12 +767,14 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 
 		apply_req.dev_hdl = dev->dev_hdl;
 		apply_req.request_id =
-			link->req.apply_data[pd].req_id;
+			apply_data[pd].req_id;
 		apply_req.trigger_point = trigger;
 		if (dev->ops && dev->ops->apply_req) {
 			rc = dev->ops->apply_req(&apply_req);
 			if (rc) {
 				*failed_dev = dev;
+				__cam_req_mgr_notify_frame_skip(link,
+					trigger);
 				return rc;
 			}
 			CAM_DBG(CAM_REQ,
@@ -721,11 +795,20 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 					pd);
 				continue;
 			}
-			if (link->req.apply_data[pd].skip_idx ||
-				link->req.apply_data[pd].req_id < 0) {
-				CAM_DBG(CAM_CRM, "skip %d req_id %lld",
-					link->req.apply_data[pd].skip_idx,
-					link->req.apply_data[pd].req_id);
+			if (apply_data[pd].skip_idx ||
+				(apply_data[pd].req_id < 0)) {
+				CAM_DBG(CAM_CRM,
+					"dev %s skip %d req_id %lld",
+					dev->dev_info.name,
+					apply_data[pd].skip_idx,
+					apply_data[pd].req_id);
+				apply_req.dev_hdl = dev->dev_hdl;
+				apply_req.request_id =
+					link->req.prev_apply_data[pd].req_id;
+				apply_req.trigger_point = 0;
+				apply_req.report_if_bubble = 0;
+				if ((dev->ops) && (dev->ops->notify_frame_skip))
+					dev->ops->notify_frame_skip(&apply_req);
 				continue;
 			}
 			if (!(dev->dev_info.trigger & trigger))
@@ -733,8 +816,8 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 
 			apply_req.dev_hdl = dev->dev_hdl;
 			apply_req.request_id =
-				link->req.apply_data[pd].req_id;
-			idx = link->req.apply_data[pd].idx;
+				apply_data[pd].req_id;
+			idx = apply_data[pd].idx;
 			slot = &dev->pd_tbl->slot[idx];
 			apply_req.report_if_bubble =
 				in_q->slot[idx].recover;
@@ -747,7 +830,7 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 
 			apply_req.trigger_point = trigger;
 			CAM_DBG(CAM_REQ,
-				"SEND: link_hdl: %x pd %d req_id %lld",
+				"SEND: %d link_hdl: %x pd %d req_id %lld",
 				link->link_hdl, pd, apply_req.request_id);
 			if (dev->ops && dev->ops->apply_req) {
 				rc = dev->ops->apply_req(&apply_req);
@@ -773,7 +856,13 @@ static int __cam_req_mgr_send_req(struct cam_req_mgr_core_link *link,
 			if (dev->ops && dev->ops->process_evt)
 				dev->ops->process_evt(&evt_data);
 		}
+		__cam_req_mgr_notify_frame_skip(link, trigger);
+	} else {
+		memcpy(link->req.prev_apply_data, link->req.apply_data,
+			CAM_PIPELINE_DELAY_MAX *
+			sizeof(struct cam_req_mgr_apply));
 	}
+
 	return rc;
 }
 
@@ -1472,6 +1561,7 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
 				rc = -EPERM;
 			}
 			spin_unlock_bh(&link->link_state_spin_lock);
+			__cam_req_mgr_notify_frame_skip(link, trigger);
 			goto end;
 		}
 	}
@@ -2073,38 +2163,6 @@ static void __cam_req_mgr_unreserve_link(
 /* Workqueue context processing section */
 
 /**
- * cam_req_mgr_process_send_req()
- *
- * @brief: This runs in workque thread context. Call core funcs to send
- *         apply request id to drivers.
- * @priv : link information.
- * @data : contains information about frame_id, link etc.
- *
- * @return: 0 on success.
- */
-int cam_req_mgr_process_send_req(void *priv, void *data)
-{
-	int                                 rc = 0;
-	struct cam_req_mgr_core_link        *link = NULL;
-	struct cam_req_mgr_send_request     *send_req = NULL;
-	struct cam_req_mgr_req_queue        *in_q = NULL;
-	struct cam_req_mgr_connected_device *dev;
-
-	if (!data || !priv) {
-		CAM_ERR(CAM_CRM, "input args NULL %pK %pK", data, priv);
-		rc = -EINVAL;
-		goto end;
-	}
-	link = (struct cam_req_mgr_core_link *)priv;
-	send_req = (struct cam_req_mgr_send_request *)data;
-	in_q = send_req->in_q;
-
-	rc = __cam_req_mgr_send_req(link, in_q, CAM_TRIGGER_POINT_SOF, &dev);
-end:
-	return rc;
-}
-
-/**
  * cam_req_mgr_process_flush_req()
  *
  * @brief: This runs in workque thread context. Call core funcs to check
@@ -2117,6 +2175,7 @@ end:
 int cam_req_mgr_process_flush_req(void *priv, void *data)
 {
 	int                                  rc = 0, i = 0, idx = -1;
+	uint32_t                             pd = 0;
 	struct cam_req_mgr_flush_info       *flush_info = NULL;
 	struct cam_req_mgr_core_link        *link = NULL;
 	struct cam_req_mgr_req_queue        *in_q = NULL;
@@ -2182,6 +2241,12 @@ int cam_req_mgr_process_flush_req(void *priv, void *data)
 		if (device->ops && device->ops->flush_req)
 			rc = device->ops->flush_req(&flush_req);
 	}
+
+	for (pd = 0; pd < CAM_PIPELINE_DELAY_MAX; pd++) {
+		link->req.apply_data[pd].req_id = -1;
+		link->req.prev_apply_data[pd].req_id = -1;
+	}
+
 	complete(&link->workq_comp);
 	mutex_unlock(&link->req.lock);
 

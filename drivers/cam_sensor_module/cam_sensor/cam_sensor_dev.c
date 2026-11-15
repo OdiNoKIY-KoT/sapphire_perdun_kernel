@@ -175,25 +175,39 @@ static int32_t cam_sensor_driver_i2c_probe(struct i2c_client *client,
 		goto unreg_subdev;
 	}
 
+	s_ctrl->i2c_data.frame_skip =
+		kzalloc(sizeof(struct i2c_settings_array) *
+		MAX_PER_FRAME_ARRAY, GFP_KERNEL);
+	if (s_ctrl->i2c_data.frame_skip == NULL) {
+		rc = -ENOMEM;
+		goto free_perframe;
+	}
+
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.init_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.config_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.streamon_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.streamoff_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.read_settings.list_head));
 
-	for (i = 0; i < MAX_PER_FRAME_ARRAY; i++)
+	for (i = 0; i < MAX_PER_FRAME_ARRAY; i++) {
 		INIT_LIST_HEAD(&(s_ctrl->i2c_data.per_frame[i].list_head));
+		INIT_LIST_HEAD(&(s_ctrl->i2c_data.frame_skip[i].list_head));
+	}
 
 	s_ctrl->bridge_intf.device_hdl = -1;
 	s_ctrl->bridge_intf.link_hdl = -1;
 	s_ctrl->bridge_intf.ops.get_dev_info = cam_sensor_publish_dev_info;
 	s_ctrl->bridge_intf.ops.link_setup = cam_sensor_establish_link;
 	s_ctrl->bridge_intf.ops.apply_req = cam_sensor_apply_request;
+	s_ctrl->bridge_intf.ops.notify_frame_skip =
+		cam_sensor_notify_frame_skip;
 	s_ctrl->bridge_intf.ops.flush_req = cam_sensor_flush_request;
 
 	s_ctrl->sensordata->power_info.dev = soc_info->dev;
 
 	return rc;
+free_perframe:
+	kfree(s_ctrl->i2c_data.per_frame);
 unreg_subdev:
 	cam_unregister_subdev(&(s_ctrl->v4l2_dev_str));
 free_s_ctrl:
@@ -223,6 +237,7 @@ static int cam_sensor_platform_remove(struct platform_device *pdev)
 		devm_clk_put(soc_info->dev, soc_info->clk[i]);
 
 	kfree(s_ctrl->i2c_data.per_frame);
+	kfree(s_ctrl->i2c_data.frame_skip);
 	platform_set_drvdata(pdev, NULL);
 	v4l2_set_subdevdata(&(s_ctrl->v4l2_dev_str.sd), NULL);
 	devm_kfree(&pdev->dev, s_ctrl);
@@ -251,6 +266,7 @@ static int cam_sensor_driver_i2c_remove(struct i2c_client *client)
 		devm_clk_put(soc_info->dev, soc_info->clk[i]);
 
 	kfree(s_ctrl->i2c_data.per_frame);
+	kfree(s_ctrl->i2c_data.frame_skip);
 	v4l2_set_subdevdata(&(s_ctrl->v4l2_dev_str.sd), NULL);
 	kfree(s_ctrl);
 
@@ -311,20 +327,32 @@ static int32_t cam_sensor_driver_platform_probe(
 		goto unreg_subdev;
 	}
 
+	s_ctrl->i2c_data.frame_skip =
+		kzalloc(sizeof(struct i2c_settings_array) *
+		MAX_PER_FRAME_ARRAY, GFP_KERNEL);
+	if (s_ctrl->i2c_data.frame_skip == NULL) {
+		rc = -ENOMEM;
+		goto free_perframe;
+	}
+
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.init_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.config_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.streamon_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.streamoff_settings.list_head));
 	INIT_LIST_HEAD(&(s_ctrl->i2c_data.read_settings.list_head));
 
-	for (i = 0; i < MAX_PER_FRAME_ARRAY; i++)
+	for (i = 0; i < MAX_PER_FRAME_ARRAY; i++) {
 		INIT_LIST_HEAD(&(s_ctrl->i2c_data.per_frame[i].list_head));
+		INIT_LIST_HEAD(&(s_ctrl->i2c_data.frame_skip[i].list_head));
+	}
 
 	s_ctrl->bridge_intf.device_hdl = -1;
 	s_ctrl->bridge_intf.link_hdl = -1;
 	s_ctrl->bridge_intf.ops.get_dev_info = cam_sensor_publish_dev_info;
 	s_ctrl->bridge_intf.ops.link_setup = cam_sensor_establish_link;
 	s_ctrl->bridge_intf.ops.apply_req = cam_sensor_apply_request;
+	s_ctrl->bridge_intf.ops.notify_frame_skip =
+		cam_sensor_notify_frame_skip;
 	s_ctrl->bridge_intf.ops.flush_req = cam_sensor_flush_request;
 
 	s_ctrl->sensordata->power_info.dev = &pdev->dev;
@@ -332,6 +360,8 @@ static int32_t cam_sensor_driver_platform_probe(
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
 
 	return rc;
+free_perframe:
+	kfree(s_ctrl->i2c_data.per_frame);
 unreg_subdev:
 	cam_unregister_subdev(&(s_ctrl->v4l2_dev_str));
 free_s_ctrl:
@@ -369,7 +399,6 @@ static struct i2c_driver cam_sensor_driver_i2c = {
 int cam_sensor_driver_init(void)
 {
 	int32_t rc = 0;
-	CAM_INFO(CAM_SENSOR, "[wl2866d DEBUG]cam_sensor_driver_init E");
 
 	rc = platform_driver_register(&cam_sensor_platform_driver);
 	if (rc < 0) {
@@ -382,7 +411,6 @@ int cam_sensor_driver_init(void)
 	if (rc)
 		CAM_ERR(CAM_SENSOR, "i2c_add_driver failed rc = %d", rc);
 
-	CAM_INFO(CAM_SENSOR, "[wl2866d DEBUG]sensor i2c_add_driver successful");
 	return rc;
 }
 
@@ -390,7 +418,6 @@ void cam_sensor_driver_exit(void)
 {
 	platform_driver_unregister(&cam_sensor_platform_driver);
 	i2c_del_driver(&cam_sensor_driver_i2c);
-	CAM_INFO(CAM_SENSOR, "[wl2866d DEBUG]sensor i2c_del_driver successful");
 }
 
 MODULE_DESCRIPTION("cam_sensor_driver");

@@ -1,26 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/kernel.h>
 #include "cam_sensor_util.h"
 #include "cam_mem_mgr.h"
 #include "cam_res_mgr_api.h"
-/* hzk add for camera power up bengin*/
-#include "wl2866d.h"
-#define MAX_DELAY_TIME 65420
-#define DELAY_SETP 1000
-/* hzk add for camera power up end*/
 
 #define CAM_SENSOR_PINCTRL_STATE_SLEEP "cam_suspend"
 #define CAM_SENSOR_PINCTRL_STATE_DEFAULT "cam_default"
 
-/* hzk add for distinguish front i&&ii bengin */
+/* xiaomi: distinguish front i && ii dvdd voltage */
 #define CAM_SENSOR_FRONT_MIN_VOLTAGE 1050000
 #define CAM_SENSOR_FRONT_MAX_VOLTAGE 1200000
-/* hzk add for distinguish front i&&ii end */
 
 #define VALIDATE_VOLTAGE(min, max, config_val) ((config_val) && \
 	(config_val >= min) && (config_val <= max))
@@ -285,7 +278,6 @@ static int32_t cam_sensor_get_io_buffer(
 			io_cfg->direction);
 		rc = -EINVAL;
 	}
-	cam_mem_put_cpu_buf(io_cfg->mem_handle[0]);
 	return rc;
 }
 
@@ -733,12 +725,9 @@ int cam_sensor_i2c_command_parser(
 			}
 		}
 		i2c_reg_settings->is_settings_valid = 1;
-		cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 	}
-	return rc;
 
 end:
-	cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 	return rc;
 }
 
@@ -944,7 +933,7 @@ int32_t msm_camera_fill_vreg_params(
 						soc_info->rgltr_max_volt[j] =
 						power_setting[i].config_val;
 					}
-					/* hzk add for modify dvdd voltage range bengin */
+					/* xiaomi: allow front dvdd 1.05V..1.2V */
 					else if (VALIDATE_VOLTAGE(
 						CAM_SENSOR_FRONT_MIN_VOLTAGE,
 						CAM_SENSOR_FRONT_MAX_VOLTAGE,
@@ -953,7 +942,6 @@ int32_t msm_camera_fill_vreg_params(
 						soc_info->rgltr_max_volt[j] =
 						power_setting[i].config_val;
 					}
-					/* hzk add for modify dvdd voltage range end */
 					break;
 				}
 			}
@@ -1713,6 +1701,27 @@ int cam_sensor_util_init_gpio_pin_tbl(
 		rc = 0;
 	}
 
+	rc = of_property_read_u32(of_node, "gpio-custom3", &val);
+	if (rc != -EINVAL) {
+		if (rc < 0) {
+			CAM_ERR(CAM_SENSOR,
+				"read gpio-custom3 failed rc %d", rc);
+			goto free_gpio_info;
+		} else if (val >= gpio_array_size) {
+			CAM_ERR(CAM_SENSOR, "gpio-custom3 invalid %d", val);
+			rc = -EINVAL;
+			goto free_gpio_info;
+		}
+		gpio_num_info->gpio_num[SENSOR_CUSTOM_GPIO3] =
+			gconf->cam_gpio_common_tbl[val].gpio;
+		gpio_num_info->valid[SENSOR_CUSTOM_GPIO3] = 1;
+
+		CAM_DBG(CAM_SENSOR, "gpio-custom3 %d",
+			gpio_num_info->gpio_num[SENSOR_CUSTOM_GPIO3]);
+	} else {
+		rc = 0;
+	}
+
 	return rc;
 
 free_gpio_info:
@@ -1852,11 +1861,6 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 	int32_t vreg_idx = -1;
 	struct cam_sensor_power_setting *power_setting = NULL;
 	struct msm_camera_gpio_num_info *gpio_num_info = NULL;
-	/* hzk add for camera power up bengin*/
-	uint16_t wl2866_time_delay = 0;
-	int wl2866_iotype = -1;
-	int retry = 0;
-	/* hzk add for camera power up end*/
 
 	CAM_DBG(CAM_SENSOR, "Enter");
 	if (!ctrl) {
@@ -1920,6 +1924,7 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 		}
 
 		CAM_DBG(CAM_SENSOR, "seq_type %d", power_setting->seq_type);
+
 		switch (power_setting->seq_type) {
 		case SENSOR_MCLK:
 			if (power_setting->seq_val >= soc_info->num_clk) {
@@ -1989,6 +1994,7 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 		case SENSOR_STANDBY:
 		case SENSOR_CUSTOM_GPIO1:
 		case SENSOR_CUSTOM_GPIO2:
+		case SENSOR_CUSTOM_GPIO3:
 			if (no_gpio) {
 				CAM_ERR(CAM_SENSOR, "request gpio failed");
 				goto power_up_failed;
@@ -1998,8 +2004,8 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 				goto power_up_failed;
 			}
 			CAM_DBG(CAM_SENSOR, "gpio set val %d",
-					gpio_num_info->gpio_num
-					[power_setting->seq_type]);
+				gpio_num_info->gpio_num
+				[power_setting->seq_type]);
 
 			rc = msm_cam_sensor_handle_reg_gpio(
 				power_setting->seq_type,
@@ -2076,37 +2082,6 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 				goto power_up_failed;
 			}
 			break;
-		/* hzk add for camera power up bengin*/
-		case SENSOR_WL2866D_DVDD1:
-		case SENSOR_WL2866D_DVDD2:
-		case SENSOR_WL2866D_AVDD1:
-		case SENSOR_WL2866D_AVDD2:
-			//wl2866 out port num :
-			//		OUT_DVDD1 = 0
-			//		OUT_DVDD2 = 1
-			//		OUT_AVDD1 = 2
-			//		OUT_AVDD2 = 3
-			//but we pre set SENSOR_WL2866D_DVDD1.
-			wl2866_iotype = ((int)power_setting->seq_type) - SENSOR_WL2866D_DVDD1;
-			for(retry = 0; retry < 3; retry++) {
-				rc = wl2866d_camera_power_control(wl2866_iotype, power_setting->config_val);
-				if(rc >= 0)
-					break;
-			}
-			if (rc < 0) {
-				CAM_ERR(CAM_SENSOR,"wl2866d_camera_power_up_io_type [%d]  failed seq-val[%d] config[%d] retry time: %d",power_setting->seq_type, power_setting->seq_val, power_setting->config_val, retry);
-				goto power_up_failed;
-			}
-
-			//if wl2866 exit, xml powerUpSequence delayMs now mean delay time
-			wl2866_time_delay = DELAY_SETP * (power_setting->delay);
-			if(MAX_DELAY_TIME < wl2866_time_delay) {
-				wl2866_time_delay = MAX_DELAY_TIME;
-			}
-			usleep_range(wl2866_time_delay , wl2866_time_delay + 100);
-			CAM_INFO(CAM_SENSOR,"power_setting->seq_type = [%d], wl2866_time_delay is [%d]", power_setting->seq_type, wl2866_time_delay);
-			break;
-			/* hzk add for camera power up end*/
 		default:
 			CAM_ERR(CAM_SENSOR, "error power seq type %d",
 				power_setting->seq_type);
@@ -2149,6 +2124,7 @@ power_up_failed:
 		case SENSOR_STANDBY:
 		case SENSOR_CUSTOM_GPIO1:
 		case SENSOR_CUSTOM_GPIO2:
+		case SENSOR_CUSTOM_GPIO3:
 			if (!gpio_num_info)
 				continue;
 			if (!gpio_num_info->valid
@@ -2265,11 +2241,6 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 	struct cam_sensor_power_setting *pd = NULL;
 	struct cam_sensor_power_setting *ps = NULL;
 	struct msm_camera_gpio_num_info *gpio_num_info = NULL;
-	/* hzk add for camera power down bengin*/
-	uint16_t wl2866_time_delay = 0;
-	int wl2866_iotype = -1;
-	int retry = 0;
-	/* hzk add for camera power down end*/
 
 	CAM_DBG(CAM_SENSOR, "Enter");
 	if (!ctrl || !soc_info) {
@@ -2321,6 +2292,7 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 		case SENSOR_STANDBY:
 		case SENSOR_CUSTOM_GPIO1:
 		case SENSOR_CUSTOM_GPIO2:
+		case SENSOR_CUSTOM_GPIO3:
 
 			if (!gpio_num_info->valid[pd->seq_type])
 				continue;
@@ -2390,40 +2362,10 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 				CAM_ERR(CAM_SENSOR,
 					"Error disabling VREG GPIO");
 			break;
-		/* hzk add for camera power down bengin*/
-		case SENSOR_WL2866D_DVDD1:
-		case SENSOR_WL2866D_DVDD2:
-		case SENSOR_WL2866D_AVDD1:
-		case SENSOR_WL2866D_AVDD2:
-			//wl2866 out port num :
-			//		OUT_DVDD1 = 0
-			//		OUT_DVDD2 = 1
-			//		OUT_AVDD1 = 2
-			//		OUT_AVDD2 = 3
-			//but we pre set SENSOR_WL2866D_DVDD1.
-			wl2866_iotype = ((int)pd->seq_type) - SENSOR_WL2866D_DVDD1;
-			for(retry = 0; retry < 3; retry++) {
-				ret = wl2866d_camera_power_control(wl2866_iotype, pd->config_val);
-				if(ret >= 0)
-					break;
-			}
-			if (ret < 0) {
-				CAM_ERR(CAM_SENSOR,"wl2866d_camera_power_down iotype [%d] seq-val[%d]config-val[%d] failed retry time: %d", pd->seq_type, pd->seq_val, pd->config_val, retry);
-				break;
-			}
-			//if wl2866 exit, xml powerDownSequence delayMs now mean delay time
-			wl2866_time_delay = DELAY_SETP * (pd->delay);
-			if(MAX_DELAY_TIME < wl2866_time_delay) {
-				wl2866_time_delay = MAX_DELAY_TIME;
-			}
-			usleep_range(wl2866_time_delay , wl2866_time_delay + 100);
-			CAM_INFO(CAM_SENSOR,"wl2866d_iotype = [%d], wl2866_time_delay is [%d]", pd->seq_type, wl2866_time_delay);
-			break;
 		default:
 			CAM_ERR(CAM_SENSOR, "error power seq type %d",
 				pd->seq_type);
 			break;
-			/* hzk add for camera power down end*/
 		}
 		if (pd->delay > 20)
 			msleep(pd->delay);

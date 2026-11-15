@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
+#include <linux/gpio.h>
 
 #include "cam_sensor_cmn_header.h"
 #include "cam_flash_core.h"
 #include "cam_res_mgr_api.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
+#include <dt-bindings/msm-camera.h>
 
 int cam_flash_led_prepare(struct led_trigger *trigger, int options,
 	int *max_current, bool is_wled)
@@ -428,10 +429,23 @@ static int cam_flash_ops(struct cam_flash_ctrl *flash_ctrl,
 int cam_flash_off(struct cam_flash_ctrl *flash_ctrl)
 {
 	int rc = 0;
+	struct cam_flash_private_soc *soc_private = NULL;
 
 	if (!flash_ctrl) {
 		CAM_ERR(CAM_FLASH, "Flash control Null");
 		return -EINVAL;
+	}
+
+	soc_private = flash_ctrl->soc_info.soc_private;
+	if (soc_private->flash_type == CAM_FLASH_TYPE_GPIO) {
+		rc = gpio_direction_output(flash_ctrl->flash_enf_gpio,
+			CAM_FLASH_GPIO_OUT_LOW);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enf out low fail!!!: %d", rc);
+		rc = gpio_direction_output(flash_ctrl->flash_enm_gpio,
+			CAM_FLASH_GPIO_OUT_LOW);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enm out low fail!!!: %d", rc);
 	}
 
 	if (flash_ctrl->switch_trigger)
@@ -459,10 +473,23 @@ static int cam_flash_low(
 	struct cam_flash_frame_setting *flash_data)
 {
 	int i = 0, rc = 0;
+	struct cam_flash_private_soc *soc_private =
+		flash_ctrl->soc_info.soc_private;
 
 	if (!flash_data) {
 		CAM_ERR(CAM_FLASH, "Flash Data Null");
 		return -EINVAL;
+	}
+
+	if (soc_private->flash_type == CAM_FLASH_TYPE_GPIO) {
+		rc = gpio_direction_output(flash_ctrl->flash_enm_gpio,
+			CAM_FLASH_GPIO_OUT_HIGH);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enm out high fail!!!: %d", rc);
+		rc = gpio_direction_output(flash_ctrl->flash_enf_gpio,
+			CAM_FLASH_GPIO_OUT_LOW);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enf out low fail!!!: %d", rc);
 	}
 
 	for (i = 0; i < flash_ctrl->flash_num_sources; i++)
@@ -484,10 +511,23 @@ static int cam_flash_high(
 	struct cam_flash_frame_setting *flash_data)
 {
 	int i = 0, rc = 0;
+	struct cam_flash_private_soc *soc_private =
+		flash_ctrl->soc_info.soc_private;
 
 	if (!flash_data) {
 		CAM_ERR(CAM_FLASH, "Flash Data Null");
 		return -EINVAL;
+	}
+
+	if (soc_private->flash_type == CAM_FLASH_TYPE_GPIO) {
+		rc = gpio_direction_output(flash_ctrl->flash_enm_gpio,
+			CAM_FLASH_GPIO_OUT_HIGH);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enm out high fail!!!: %d", rc);
+		rc = gpio_direction_output(flash_ctrl->flash_enf_gpio,
+			CAM_FLASH_GPIO_OUT_HIGH);
+		if (rc)
+			CAM_ERR(CAM_FLASH, "flash enf out high fail!!!: %d", rc);
 	}
 
 	for (i = 0; i < flash_ctrl->torch_num_sources; i++)
@@ -1109,7 +1149,6 @@ int cam_flash_i2c_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 
 				break;
 			}
-			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 		}
 		power_info = &fctrl->power_info;
 		if (!power_info) {
@@ -1300,7 +1339,6 @@ update_req_mgr:
 			fctrl->bridge_intf.crm_cb->add_req(&add_req);
 		CAM_DBG(CAM_FLASH, "add req to req_mgr= %lld", add_req.req_id);
 	}
-	cam_mem_put_cpu_buf(config.packet_handle);
 	return rc;
 }
 
@@ -1477,8 +1515,6 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 			rc = -EINVAL;
 			return rc;
 		}
-
-		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		break;
 	}
 	case CAM_FLASH_PACKET_OPCODE_SET_OPS: {
@@ -1573,8 +1609,6 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 			rc = -EINVAL;
 			return rc;
 		}
-
-		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		break;
 	}
 	case CAM_FLASH_PACKET_OPCODE_NON_REALTIME_SET_OPS: {
@@ -1717,7 +1751,6 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 			return rc;
 		}
 
-		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		break;
 	}
 	case CAM_PKT_NOP_OPCODE: {
@@ -1766,7 +1799,6 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 		CAM_DBG(CAM_FLASH, "add req to req_mgr= %lld", add_req.req_id);
 	}
 
-	cam_mem_put_cpu_buf(config.packet_handle);
 	return rc;
 }
 

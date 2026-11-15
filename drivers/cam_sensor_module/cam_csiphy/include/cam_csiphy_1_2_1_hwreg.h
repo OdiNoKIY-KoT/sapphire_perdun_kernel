@@ -396,17 +396,21 @@ struct data_rate_settings_t data_rate_delta_table_1_2_1 = {
 		{
 			/* (2.5 * 10**3 * 2.28) rounded value*/
 			.bandwidth = 5700000000,
-			.data_rate_reg_array_size = 9,
+			/* xiaomi (stock sapphire) 2.5Gsps PHY tuning */
+			.data_rate_reg_array_size = 12,
 			.csiphy_data_rate_regs = {
+				{0x9B4, 0x0C, 0x01, CSIPHY_DEFAULT_PARAMS},
+				{0xAB4, 0x0C, 0x01, CSIPHY_DEFAULT_PARAMS},
+				{0xBB4, 0x0C, 0x01, CSIPHY_DEFAULT_PARAMS},
 				{0x164, 0x0B, 0x00, CSIPHY_DEFAULT_PARAMS},
 				{0x364, 0x0B, 0x00, CSIPHY_DEFAULT_PARAMS},
 				{0x564, 0x0B, 0x00, CSIPHY_DEFAULT_PARAMS},
 				{0x144, 0x32, 0x00, CSIPHY_DEFAULT_PARAMS},
 				{0x344, 0x32, 0x00, CSIPHY_DEFAULT_PARAMS},
 				{0x544, 0x32, 0x00, CSIPHY_DEFAULT_PARAMS},
-				{0x16C, 0x25, 0x00, CSIPHY_DEFAULT_PARAMS},
-				{0x36C, 0x25, 0x00, CSIPHY_DEFAULT_PARAMS},
-				{0x56C, 0x25, 0x00, CSIPHY_DEFAULT_PARAMS},
+				{0x16C, 0x07, 0x00, CSIPHY_DEFAULT_PARAMS},
+				{0x36C, 0x07, 0x00, CSIPHY_DEFAULT_PARAMS},
+				{0x56C, 0x07, 0x00, CSIPHY_DEFAULT_PARAMS},
 			}
 		},
 		{

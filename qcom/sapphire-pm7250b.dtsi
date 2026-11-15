@@ -9,6 +9,7 @@
  */
 #include <dt-bindings/clock/qcom,gcc-khaje.h>
 #include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
 
 &spmi_bus {
 	#address-cells = <2>;
@@ -39,22 +40,22 @@
 			               &pm7250b_vadc 9 &pm7250b_vadc 6
 			               &pm7250b_vadc 79 &pm7250b_vadc 153
 			               &pm7250b_vadc 131 &pm7250b_vadc 77
-			               &pm7250b_qg 75 &pm7250b_qg 162
-			               &pm7250b_qg 70 &pm7250b_qg 69
-			               &pm7250b_qg 66 &pm7250b_qg 71
-			               &pm7250b_qg 93 &pm7250b_qg 78
-			               &pm7250b_qg 68 &pm7250b_qg 91
-			               &pm7250b_qg 72 &pm7250b_qg 45
-			               &pm7250b_qg 83 &pm7250b_qg 73
-			               &pm7250b_qg 82 &pm7250b_qg 84
-			               &pm7250b_qg 86 &pm7250b_qg 193
-			               &sc8541_standalone 152 &sc8541_standalone 157
-			               &auth_battery 181 &auth_battery 180
-			               &auth_battery 185 &auth_battery 187
-			               &bq25960_standalone 152 &bq25960_standalone 157
-			               &pm7250b_qg 160 &pm7250b_qg 161
-			               &pm7250b_qg 159 &pm7250b_qg 80
-			               &bq25960_standalone 196 &pm7250b_charger 197>;
+			               &pm7250b_qg PSY_IIO_RESISTANCE_ID &pm7250b_qg PSY_IIO_FASTCHARGE_MODE
+			               &pm7250b_qg PSY_IIO_VOLTAGE_NOW &pm7250b_qg PSY_IIO_TEMP
+			               &pm7250b_qg PSY_IIO_CAPACITY &pm7250b_qg PSY_IIO_VOLTAGE_OCV
+			               &pm7250b_qg PSY_IIO_VOLTAGE_AVG &pm7250b_qg PSY_IIO_DEBUG_BATTERY
+			               &pm7250b_qg PSY_IIO_REAL_CAPACITY &pm7250b_qg PSY_IIO_CC_SOC
+			               &pm7250b_qg PSY_IIO_CURRENT_NOW &pm7250b_qg PSY_IIO_VOLTAGE_MAX
+			               &pm7250b_qg PSY_IIO_CHARGE_FULL &pm7250b_qg PSY_IIO_CHARGE_COUNTER
+			               &pm7250b_qg PSY_IIO_CYCLE_COUNT &pm7250b_qg PSY_IIO_CHARGE_FULL_DESIGN
+			               &pm7250b_qg PSY_IIO_TIME_TO_FULL_NOW &pm7250b_qg PSY_IIO_FFC_CHG_TERMINATION_CURRENT
+			               &sc8541_standalone PSY_IIO_SC_BUS_CURRENT &sc8541_standalone PSY_IIO_SC_CHIP_VENDOR
+			               &auth_battery PSY_IIO_AUTH_BATT_ID &auth_battery PSY_IIO_AUTH_AUTHEN_RESULT
+			               &auth_battery PSY_IIO_AUTH_MANUFACTURER &auth_battery PSY_IIO_AUTH_CHIP_OK
+			               &bq25960_standalone PSY_IIO_SC_BUS_CURRENT &bq25960_standalone PSY_IIO_SC_CHIP_VENDOR
+			               &pm7250b_qg PSY_IIO_SOC_DECIMAL &pm7250b_qg PSY_IIO_SOC_DECIMAL_RATE
+			               &pm7250b_qg PSY_IIO_SHUTDOWN_DELAY &pm7250b_qg PSY_IIO_BATT_FULL_CURRENT
+			               &bq25960_standalone PSY_IIO_SET_ACDRV &pm7250b_charger PSY_IIO_RECHARGE_MODE>;
 			io-channel-names = "usb_in_voltage", "usb_in_current", "chg_temp", "die_temp", "conn_temp", "sbux_res", "vph_voltage", "skin_temp", "resistance_id", "fastcharge_mode", "voltage_now", "temp", "capacity", "voltage_ocv", "voltage_avg", "debug_battery", "real_capacity", "cc_soc", "current_now", "voltage_max", "charge_full", "charge_counter", "cycle_count", "charge_full_design", "time_to_full_now", "ffc_chg_termination_current", "sc_bus_current", "sc_manufacturer", "auth_batt_id", "auth_authen_result", "auth_manufacturer", "auth_chip_ok", "bq_bus_current", "bq_manufacturer", "soc_decimal", "soc_decimal_rate", "shutdown_delay", "batt_full_current", "bq_set_acdrv", "recharg_mode";
 			qcom,battery-data = <&mtp_batterydata>;
 			qcom,sec-charger-config = <0>;
@@ -173,13 +174,13 @@
 			mi,pd_max_curr_limit = <4000000>;
 			mi,limit_pd_unverified_pps_vbus = <1>;
 			mi,pd_unverified_pps_max_vbus_limit = <9500000>;
-			io-channels = <&pm7250b_charger 4 &pm7250b_charger 3
-			               &pm7250b_charger 13 &pm7250b_charger 2
-			               &pm7250b_charger 31 &pm7250b_charger 29
-			               &pm7250b_charger 30 &pm7250b_charger 0
-			               &pm7250b_charger 32 &pm7250b_charger 12
-			               &pm7250b_charger 11 &pm7250b_charger 10
-			               &pm7250b_charger 1 &pm7250b_charger 7>;
+			io-channels = <&pm7250b_charger PSY_IIO_PD_ACTIVE &pm7250b_charger PSY_IIO_TYPEC_CC_ORIENTATION
+			               &pm7250b_charger PSY_IIO_CONNECTOR_TYPE &pm7250b_charger PSY_IIO_TYPEC_POWER_ROLE
+			               &pm7250b_charger PSY_IIO_PD_USB_SUSPEND_SUPPORTED &pm7250b_charger PSY_IIO_TYPEC_SRC_RP
+			               &pm7250b_charger PSY_IIO_PD_IN_HARD_RESET &pm7250b_charger PSY_IIO_PD_CURRENT_MAX
+			               &pm7250b_charger PSY_IIO_PR_SWAP &pm7250b_charger PSY_IIO_PD_VOLTAGE_MIN
+			               &pm7250b_charger PSY_IIO_PD_VOLTAGE_MAX &pm7250b_charger PSY_IIO_USB_REAL_TYPE
+			               &pm7250b_charger PSY_IIO_TYPEC_MODE &pm7250b_charger PSY_IIO_PE_START>;
 			io-channel-names = "pd_active", "typec_cc_orientation", "connector_type", "typec_power_role", "pd_usb_suspend_supported", "typec_src_rp", "pd_in_hard_reset", "pr_current_max", "pr_swap", "pd_voltage_min", "pd_voltage_max", "real_type", "typec_mode", "pe_start";
 		};
 
@@ -210,11 +211,11 @@
 			status = "ok";
 			#io-channel-cells = <1>;
 			io-channels = <&pm7250b_vadc 42 &pm7250b_vadc 75
-			               &pm7250b_charger 55 &pm7250b_charger 63
-			               &pm7250b_charger 64 &pm7250b_charger 57
-			               &sc8541_standalone 118 &sc8541_standalone 148
-			               &bq25960_standalone 118 &bq25960_standalone 148
-			               &pm7250b_charger 10>;
+			               &pm7250b_charger PSY_IIO_INPUT_CURRENT_LIMITED &pm7250b_charger PSY_IIO_RECHARGE_SOC
+			               &pm7250b_charger PSY_IIO_FORCE_RECHARGE &pm7250b_charger PSY_IIO_CHARGE_DONE
+			               &sc8541_standalone PSY_IIO_CHARGING_ENABLED &sc8541_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+			               &bq25960_standalone PSY_IIO_CHARGING_ENABLED &bq25960_standalone PSY_IIO_SC_BATTERY_VOLTAGE
+			               &pm7250b_charger PSY_IIO_USB_REAL_TYPE>;
 			io-channel-names = "batt-therm", "batt-id", "input_current_limited", "recharge_soc", "force_recharge", "charge_done", "charging_enabled", "sc_battery_voltage", "bq_charging_enabled", "bq_battery_voltage", "real_type";
 			qcom,battery-data = <&mtp_batterydata>;
 			qcom,qg-iterm-ma = <300>;

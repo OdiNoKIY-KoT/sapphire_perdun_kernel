@@ -316,9 +316,9 @@ def main():
                 line += " :: " + pn
             print(line)
             if x is not None:
-                print("    stock: " + x[:600])
+                print("    stock: " + str(x)[:600])
             if y is not None:
-                print("    ours : " + y[:600])
+                print("    ours : " + str(y)[:600])
     return 0 if not out else 1
 
 

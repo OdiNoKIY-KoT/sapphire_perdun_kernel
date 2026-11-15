@@ -9,6 +9,7 @@
  */
 #include <dt-bindings/clock/qcom,gcc-khaje.h>
 #include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
 
 
 &thermal_zones {

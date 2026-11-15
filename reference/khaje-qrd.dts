@@ -18,6 +18,7 @@
 
 #include <dt-bindings/clock/qcom,gcc-khaje.h>
 #include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/iio/qti_power_supply_iio.h>
 
 &thermal_zones {
 	pm6125-tz {
@@ -475,14 +476,14 @@
 			               &pm7250b_vadc 9 &pm7250b_vadc 6
 			               &pm7250b_vadc 79 &pm7250b_vadc 153
 			               &pm7250b_vadc 131 &pm7250b_vadc 77
-			               &pm7250b_qg 75 &pm7250b_qg 70
-			               &pm7250b_qg 69 &pm7250b_qg 66
-			               &pm7250b_qg 71 &pm7250b_qg 93
-			               &pm7250b_qg 78 &pm7250b_qg 68
-			               &pm7250b_qg 91 &pm7250b_qg 72
-			               &pm7250b_qg 45 &pm7250b_qg 83
-			               &pm7250b_qg 73 &pm7250b_qg 82
-			               &pm7250b_qg 84 &pm7250b_qg 86>;
+			               &pm7250b_qg PSY_IIO_RESISTANCE_ID &pm7250b_qg PSY_IIO_VOLTAGE_NOW
+			               &pm7250b_qg PSY_IIO_TEMP &pm7250b_qg PSY_IIO_CAPACITY
+			               &pm7250b_qg PSY_IIO_VOLTAGE_OCV &pm7250b_qg PSY_IIO_VOLTAGE_AVG
+			               &pm7250b_qg PSY_IIO_DEBUG_BATTERY &pm7250b_qg PSY_IIO_REAL_CAPACITY
+			               &pm7250b_qg PSY_IIO_CC_SOC &pm7250b_qg PSY_IIO_CURRENT_NOW
+			               &pm7250b_qg PSY_IIO_VOLTAGE_MAX &pm7250b_qg PSY_IIO_CHARGE_FULL
+			               &pm7250b_qg PSY_IIO_CHARGE_COUNTER &pm7250b_qg PSY_IIO_CYCLE_COUNT
+			               &pm7250b_qg PSY_IIO_CHARGE_FULL_DESIGN &pm7250b_qg PSY_IIO_TIME_TO_FULL_NOW>;
 			io-channel-names = "usb_in_voltage", "usb_in_current", "chg_temp", "die_temp", "conn_temp", "sbux_res", "vph_voltage", "skin_temp", "resistance_id", "voltage_now", "temp", "capacity", "voltage_ocv", "voltage_avg", "debug_battery", "real_capacity", "cc_soc", "current_now", "voltage_max", "charge_full", "charge_counter", "cycle_count", "charge_full_design", "time_to_full_now";
 			qcom,battery-data = <&qrd_batterydata>;
 			qcom,sec-charger-config = <1>;
@@ -587,13 +588,13 @@
 			vdd-pdphy-supply = <&L15A>;
 			vbus-supply = <&smb5_vbus>;
 			vconn-supply = <&smb5_vconn>;
-			io-channels = <&pm7250b_charger 4 &pm7250b_charger 3
-			               &pm7250b_charger 13 &pm7250b_charger 2
-			               &pm7250b_charger 31 &pm7250b_charger 29
-			               &pm7250b_charger 30 &pm7250b_charger 0
-			               &pm7250b_charger 32 &pm7250b_charger 12
-			               &pm7250b_charger 11 &pm7250b_charger 10
-			               &pm7250b_charger 1 &pm7250b_charger 7>;
+			io-channels = <&pm7250b_charger PSY_IIO_PD_ACTIVE &pm7250b_charger PSY_IIO_TYPEC_CC_ORIENTATION
+			               &pm7250b_charger PSY_IIO_CONNECTOR_TYPE &pm7250b_charger PSY_IIO_TYPEC_POWER_ROLE
+			               &pm7250b_charger PSY_IIO_PD_USB_SUSPEND_SUPPORTED &pm7250b_charger PSY_IIO_TYPEC_SRC_RP
+			               &pm7250b_charger PSY_IIO_PD_IN_HARD_RESET &pm7250b_charger PSY_IIO_PD_CURRENT_MAX
+			               &pm7250b_charger PSY_IIO_PR_SWAP &pm7250b_charger PSY_IIO_PD_VOLTAGE_MIN
+			               &pm7250b_charger PSY_IIO_PD_VOLTAGE_MAX &pm7250b_charger PSY_IIO_USB_REAL_TYPE
+			               &pm7250b_charger PSY_IIO_TYPEC_MODE &pm7250b_charger PSY_IIO_PE_START>;
 			io-channel-names = "pd_active", "typec_cc_orientation", "connector_type", "typec_power_role", "pd_usb_suspend_supported", "typec_src_rp", "pd_in_hard_reset", "pr_current_max", "pr_swap", "pd_voltage_min", "pd_voltage_max", "real_type", "typec_mode", "pe_start";
 		};
 
@@ -624,8 +625,8 @@
 			status = "ok";
 			#io-channel-cells = <1>;
 			io-channels = <&pm7250b_vadc 42 &pm7250b_vadc 75
-			               &pm7250b_charger 55 &pm7250b_charger 63
-			               &pm7250b_charger 64 &pm7250b_charger 57>;
+			               &pm7250b_charger PSY_IIO_INPUT_CURRENT_LIMITED &pm7250b_charger PSY_IIO_RECHARGE_SOC
+			               &pm7250b_charger PSY_IIO_FORCE_RECHARGE &pm7250b_charger PSY_IIO_CHARGE_DONE>;
 			io-channel-names = "batt-therm", "batt-id", "input_current_limited", "recharge_soc", "force_recharge", "charge_done";
 			qcom,qg-iterm-ma = <150>;
 			qcom,hold-soc-while-full;

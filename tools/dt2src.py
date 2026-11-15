@@ -42,6 +42,7 @@ class Symbolizer:
                 "gpucc": "clock/qcom,gpucc-khaje.h",
                 "dispcc": "clock/qcom,dispcc-khaje.h"}
     ICC_HDR = "interconnect/qcom,bengal.h"
+    PSY_HDR = "iio/qti_power_supply_iio.h"
     CLK_PROPS = {"clocks", "assigned-clocks", "assigned-clock-parents",
                  "clock-names-ph"}
 
@@ -66,6 +67,14 @@ class Symbolizer:
             except OSError:
                 continue
             self.clk[lab], self.rst[lab] = c, r
+        self.psy = {}
+        try:
+            for line in open("%s/dt-bindings/%s" % (incdir, self.PSY_HDR)):
+                m = re.match(r"#define\s+(PSY_IIO_\w+)\s+(0x[0-9a-fA-F]+|\d+)\s*$", line.strip())
+                if m:
+                    self.psy.setdefault(int(m.group(2), 0), m.group(1))
+        except OSError:
+            pass
         try:
             for line in open("%s/dt-bindings/%s" % (incdir, self.ICC_HDR)):
                 m = re.match(r"#define\s+((MASTER|SLAVE)_\w+)\s+(\d+)", line.strip())
@@ -88,6 +97,16 @@ class Symbolizer:
                     if name:
                         out[i * 4] = name
                         self.used.add(self.CLK_HDRS[lab])
+        elif pn == "io-channels" and self.psy:
+            # charger/fuel-gauge/charge-pump IIO channels use the PSY_IIO_*
+            # indices of qti_power_supply_iio.h (ADC providers excluded)
+            for off, r in refs.items():
+                i = off // 4 + 1
+                if "adc" in r or i >= len(cs) or (i * 4) in refs:
+                    continue
+                if cs[i] in self.psy:
+                    out[i * 4] = self.psy[cs[i]]
+                    self.used.add(self.PSY_HDR)
         elif pn == "interconnects" and self.icc:
             for off in refs:
                 i = off // 4 + 1

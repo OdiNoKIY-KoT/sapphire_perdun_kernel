@@ -16,6 +16,7 @@
       (#*-cells of the provider); anything not covered is printed raw and
       flagged with a comment.
 """
+import os
 import re
 import sys
 import struct
@@ -551,8 +552,7 @@ def main():
     ap.add_argument("files", nargs="+")
     ap.add_argument("--frags")
     ap.add_argument("--no-root", action="store_true")
-    ap.add_argument("--inc", default="/home/angel/sapphire/ws/kernel_platform/"
-                    "msm-kernel/scripts/dtc/include-prefixes")
+    ap.add_argument("--inc", default=os.path.join(os.environ.get("KERNEL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "kernel_platform", "msm-kernel")), "scripts", "dtc", "include-prefixes"))
     ap.add_argument("--no-sym", action="store_true")
     ap.add_argument("--include", help="regex on node/prop path (delta)")
     ap.add_argument("--exclude", help="regex on node/prop path (delta)")

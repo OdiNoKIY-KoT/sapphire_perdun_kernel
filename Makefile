@@ -1,6 +1,7 @@
 # Thin wrapper around build.sh / tools/verify.sh (see README.md)
-STOCK_DTB  ?= /home/angel/sapphire/unpacked/vendor_boot/dtb
-STOCK_DTBO ?= /home/angel/sapphire/fw/dtbo.img
+# stock references for "make verify": the vendor_boot dtb section and the stock dtbo.img
+STOCK_DTB  ?=
+STOCK_DTBO ?=
 
 all:
 	./build.sh

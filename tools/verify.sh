@@ -22,8 +22,9 @@ TOP=$(cd "$(dirname "$0")/.." && pwd)
 SDTB=$1
 SDTBO=$2
 OUT=${3:-$TOP/out}
-QDTC=${QDTC:-/home/angel/sapphire/srcpool/_tools/k6/qdtc}
-FDTOVERLAY=${FDTOVERLAY:-$QDTC/fdtoverlay}
+QDTC=${QDTC:-}
+tool() { if [ -n "$QDTC" ] && [ -x "$QDTC/$1" ]; then echo "$QDTC/$1"; else command -v "$1" || echo "$1"; fi; }
+FDTOVERLAY=${FDTOVERLAY:-$(tool fdtoverlay)}
 LDTC=${LDTC:-dtc}       # upstream dtc >= 1.6.1 (needs -L / --local-fixups)
 KERNEL_DIR=${KERNEL_DIR:-$TOP/../kernel_platform/msm-kernel}
 V=$OUT/verify

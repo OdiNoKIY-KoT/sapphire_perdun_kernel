@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 # SPDX-License-Identifier: GPL-2.0-only
 """Print one node of a base DTB as DTS source (labels/&refs restored).
    shownode.py FILE.dtb /path/to/node [--depth N]"""
@@ -14,7 +15,7 @@ ap.add_argument("--depth", type=int, default=99)
 a = ap.parse_args()
 root = F.load(a.dtb)
 S = D.BaseCtx(root)
-D.SYM.__init__("/home/angel/sapphire/ws/kernel_platform/msm-kernel/scripts/dtc/include-prefixes")
+D.SYM.__init__(os.path.join(os.environ.get("KERNEL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "kernel_platform", "msm-kernel")), "scripts", "dtc", "include-prefixes"))
 
 
 def show(n, path, ind, depth):

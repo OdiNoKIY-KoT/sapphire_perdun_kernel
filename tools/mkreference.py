@@ -50,7 +50,7 @@ def slug(model, ids, dup):
 
 def main():
     sdir, dtb03, out = sys.argv[1:4]
-    D.SYM.__init__("/home/angel/sapphire/ws/kernel_platform/msm-kernel/scripts/dtc/include-prefixes")
+    D.SYM.__init__(os.path.join(os.environ.get("KERNEL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "kernel_platform", "msm-kernel")), "scripts", "dtc", "include-prefixes"))
     os.makedirs(out + "/parts", exist_ok=True)
     entries = []
     names = {}

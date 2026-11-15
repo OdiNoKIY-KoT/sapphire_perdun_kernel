@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 # SPDX-License-Identifier: GPL-2.0-only
 """Source-maintenance helper: replace a line range of a .dtsi with nodes
 rendered from a reference DTB (labels/&refs restored).
@@ -21,7 +22,7 @@ ap.add_argument("--indent", type=int, default=2)
 a = ap.parse_args()
 root = F.load(a.dtb)
 S = D.BaseCtx(root)
-D.SYM.__init__("/home/angel/sapphire/ws/kernel_platform/msm-kernel/scripts/dtc/include-prefixes")
+D.SYM.__init__(os.path.join(os.environ.get("KERNEL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "kernel_platform", "msm-kernel")), "scripts", "dtc", "include-prefixes"))
 out = []
 
 

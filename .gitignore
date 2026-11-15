@@ -9,3 +9,4 @@ modules.order
 *.lto.o
 .cache.mk
 *.a
+*.o.symversions

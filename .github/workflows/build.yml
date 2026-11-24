@@ -1,0 +1,71 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "lineage-23.2" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: lineage-23.2
+          fetch-depth: 1
+
+      - name: Cache toolchain (clang-r450784e)
+        id: cache-tc
+        uses: actions/cache@v4
+        with:
+          path: ~/toolchains/clang-r450784e
+          key: clang-r450784e
+
+      - name: Download toolchain
+        if: steps.cache-tc.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/toolchains
+          curl -L --progress-bar \
+            "https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r450784e.tar.gz" \
+            | tar -xz -C ~/toolchains
+
+      - name: Install deps
+        run: |
+          sudo apt update -qq
+          sudo apt install -y -qq bc bison flex cpio rsync kmod \
+            libssl-dev libelf-dev libncurses-dev lz4 zstd device-tree-compiler
+
+      - name: Build kernel
+        id: build
+        run: |
+          export PATH="${HOME}/toolchains/clang-r450784e/bin:${PATH}"
+          export LD_LIBRARY_PATH="${HOME}/toolchains/clang-r450784e/lib:${HOME}/toolchains/clang-r450784e/lib64"
+          
+          echo "=== Clang ==="
+          clang --version | head -1
+          echo ""
+          echo "=== Kernel $(make kernelversion) ==="
+          
+          BUILD_OPTS=(-j$(nproc) ARCH=arm64 LLVM=1 LLVM_IAS=1 HOSTCC=gcc HOSTCXX=g++)
+          
+          make "${BUILD_OPTS[@]}" gki_defconfig
+          scripts/kconfig/merge_config.sh -m -O . .config arch/arm64/configs/vendor/kalama_GKI.config
+          scripts/kconfig/merge_config.sh -m -O . .config arch/arm64/configs/vendor/sapphire_GKI.config
+          make "${BUILD_OPTS[@]}" olddefconfig
+          make "${BUILD_OPTS[@]}" Image
+
+      - name: Upload Image
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-Image
+          path: arch/arm64/boot/Image
+
+      - name: Upload config
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-config
+          path: .config

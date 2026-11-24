@@ -28,11 +28,13 @@ jobs:
           curl -L \
             "https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r450784e.tar.gz" \
             -o /tmp/tc.tar.gz
-          tar -xzf /tmp/tc.tar.gz -C ~/toolchains
-          ls ~/toolchains/clang-r450784e/bin/ | head -20
-          which clang || echo "clang missing"
-          ls ~/toolchains/clang-r450784e/bin/ld.lld 2>/dev/null || echo "ld.lld missing"
-
+          ls -la /tmp/tc.tar.gz
+          mkdir -p ~/toolchains/clang-r450784e
+          tar -xzf /tmp/tc.tar.gz -C ~/toolchains/clang-r450784e
+          echo "=== Contents ==="
+          ls ~/toolchains/clang-r450784e/
+          ls ~/toolchains/clang-r450784e/bin/ 2>/dev/null || echo "No bin dir"
+          
       - name: Build kernel
         id: build
         run: |

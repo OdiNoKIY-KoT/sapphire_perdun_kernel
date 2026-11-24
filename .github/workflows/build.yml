@@ -16,34 +16,30 @@ jobs:
           ref: lineage-23.2
           fetch-depth: 1
 
-      - name: Cache toolchain (clang-r450784e)
-        id: cache-tc
-        uses: actions/cache@v4
-        with:
-          path: ~/toolchains/clang-r450784e
-          key: clang-r450784e
-
-      - name: Download toolchain
-        if: steps.cache-tc.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/toolchains
-          curl -L --progress-bar \
-            "https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r450784e.tar.gz" \
-            | tar -xz -C ~/toolchains
-
       - name: Install deps
         run: |
           sudo apt update -qq
           sudo apt install -y -qq bc bison flex cpio rsync kmod \
             libssl-dev libelf-dev libncurses-dev lz4 zstd device-tree-compiler
 
+      - name: Download toolchain
+        run: |
+          mkdir -p ~/toolchains
+          curl -L \
+            "https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r450784e.tar.gz" \
+            -o /tmp/tc.tar.gz
+          tar -xzf /tmp/tc.tar.gz -C ~/toolchains
+          ls ~/toolchains/clang-r450784e/bin/ | head -20
+          which clang || echo "clang missing"
+          ls ~/toolchains/clang-r450784e/bin/ld.lld 2>/dev/null || echo "ld.lld missing"
+
       - name: Build kernel
         id: build
         run: |
           export PATH="${HOME}/toolchains/clang-r450784e/bin:${PATH}"
-          export LD_LIBRARY_PATH="${HOME}/toolchains/clang-r450784e/lib:${HOME}/toolchains/clang-r450784e/lib64"
-          
-          echo "=== Clang ==="
+          echo "=== Check ==="
+          which clang
+          which ld.lld
           clang --version | head -1
           echo ""
           echo "=== Kernel $(make kernelversion) ==="
@@ -62,10 +58,3 @@ jobs:
         with:
           name: kernel-Image
           path: arch/arm64/boot/Image
-
-      - name: Upload config
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-config
-          path: .config

@@ -22,9 +22,13 @@ jobs:
           sudo apt install -y -qq bc bison flex cpio rsync kmod \
             libssl-dev libelf-dev libncurses-dev lz4 zstd device-tree-compiler
           sudo apt update && sudo apt install -y \
-          build-essential bc bison flex patch pkg-config git curl tar xz-utils zip unzip \
-          cpio rsync kmod perl python3 python-is-python3 libssl-dev libelf-dev pahole \
+          build-essential patch pkg-config git curl tar xz-utils zip unzip \
+          perl python3 python-is-python3 libssl-dev libelf-dev pahole \
           libncurses-dev zlib1g-dev libyaml-dev lz4 zstd device-tree-compiler adb fastboot
+      - name: Make RW
+        run: |
+         sudo chown -R "$(id -un):$(id -gn)" && \
+         chmod -R u+rwX
 
       - name: Download toolchain
         run: |

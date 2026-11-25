@@ -1,3 +1,4 @@
+
 name: Build Kernel
 
 on:
@@ -18,44 +19,30 @@ jobs:
 
       - name: Install deps
         run: |
-          sudo apt update -qq
-          sudo apt install -y -qq bc bison flex cpio rsync kmod \
-            libssl-dev libelf-dev libncurses-dev lz4 zstd device-tree-compiler
-          sudo apt update && sudo apt install -y \
-          build-essential patch pkg-config git curl tar xz-utils zip unzip \
-          perl python3 python-is-python3 libssl-dev libelf-dev pahole \
-          libncurses-dev zlib1g-dev libyaml-dev lz4 zstd device-tree-compiler adb fastboot
-      - name: Make RW
-        run: |
-         sudo chown -R "$(id -un):$(id -gn)" && \
-         chmod -R u+rwX
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            bc bison flex cpio rsync kmod \
+            build-essential patch pkg-config git curl \
+            tar xz-utils zip unzip perl python3 python-is-python3 \
+            libssl-dev libelf-dev libncurses-dev pahole \
+            zlib1g-dev libyaml-dev lz4 zstd device-tree-compiler
 
       - name: Download toolchain
         run: |
-          mkdir -p ~/toolchains
-          curl -L \
+          mkdir -p ~/toolchains/clang-r450784e
+          curl -fL \
             "https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r450784e.tar.gz" \
             -o /tmp/tc.tar.gz
-          ls -la /tmp/tc.tar.gz
-          mkdir -p ~/toolchains/clang-r450784e
           tar -xzf /tmp/tc.tar.gz -C ~/toolchains/clang-r450784e
-          echo "=== Contents ==="
-          ls ~/toolchains/clang-r450784e/
-          ls ~/toolchains/clang-r450784e/bin/ 2>/dev/null || echo "No bin dir"
-          
+
       - name: Build kernel
         id: build
+        shell: bash
         run: |
           export PATH="${HOME}/toolchains/clang-r450784e/bin:${PATH}"
-          echo "=== Check ==="
-          which clang
-          which ld.lld
-          clang --version | head -1
-          echo ""
-          echo "=== Kernel $(make kernelversion) ==="
-          
-          BUILD_OPTS=(-j$(nproc) ARCH=arm64 LLVM=1 LLVM_IAS=1 HOSTCC=gcc HOSTCXX=g++)
-          
+
+          BUILD_OPTS=(-j2 ARCH=arm64 LLVM=1 LLVM_IAS=1 HOSTCC=gcc HOSTCXX=g++)
+
           make "${BUILD_OPTS[@]}" gki_defconfig
           scripts/kconfig/merge_config.sh -m -O . .config arch/arm64/configs/vendor/kalama_GKI.config
           scripts/kconfig/merge_config.sh -m -O . .config arch/arm64/configs/vendor/sapphire_GKI.config
